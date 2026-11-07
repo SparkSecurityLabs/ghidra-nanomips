@@ -9,7 +9,8 @@ import re
 import subprocess
 import tempfile
 import zipfile
-from spec_properties import cases as property_cases, relocated_decodes, relocated_flows
+from spec_properties import (cases as property_cases, crc32_scenarios,
+                             relocated_decodes, relocated_flows)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,6 +25,7 @@ with (ROOT / "tests/instruction_cases.tsv").open() as handle:
     CASES = list(csv.DictReader(handle, delimiter="\t"))
 with (ROOT / "tests/semantic_cases.tsv").open() as handle:
     SEMANTIC_CASES = list(csv.DictReader(handle, delimiter="\t"))
+SEMANTIC_CASES += list(crc32_scenarios())
 with (ROOT / "tests/sequence_cases.tsv").open() as handle:
     SEQUENCE_CASES = list(csv.DictReader(handle, delimiter="\t"))
 with (ROOT / "tests/known_issues.tsv").open() as handle:
@@ -88,6 +90,11 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
     binary.write_bytes(image)
     output = scratch / "actual.tsv"
     semantic_output = scratch / "semantics.tsv"
+    semantic_input = scratch / "semantic_cases.tsv"
+    with semantic_input.open("w") as handle:
+        writer = csv.DictWriter(handle, fieldnames=SEMANTIC_CASES[0], delimiter="\t")
+        writer.writeheader()
+        writer.writerows(SEMANTIC_CASES)
     sequence_output = scratch / "sequences.tsv"
     env = os.environ.copy()
     env["HOME"] = str(home)
@@ -97,7 +104,7 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
          "-processor", "nanomips:LE:32:default", "-noanalysis", "-scriptPath", str(ROOT / "tests"),
          "-postScript", "ProbeFlow.java", str(output), *(hex(address) for address, _ in vectors),
          "-postScript", "ProbeSemantics.java", str(ROOT / "tests/instruction_cases.tsv"),
-         str(ROOT / "tests/semantic_cases.tsv"), str(semantic_output),
+         str(semantic_input), str(semantic_output),
          "-postScript", "ProbeSemantics.java", str(ROOT / "tests/instruction_cases.tsv"),
          str(ROOT / "tests/sequence_cases.tsv"), str(sequence_output)],
         env=env)

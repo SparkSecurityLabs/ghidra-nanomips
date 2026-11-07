@@ -50,3 +50,30 @@ def relocated_decodes(instruction_cases):
             result.append((f"relocated_decode_{index}_{copy}",
                            bytes.fromhex(row["bytes"]), "relocated_decode", index))
     return result
+
+
+def crc32_scenarios():
+    """CRC operations from nanoMIPS32 ISA manual, pages 70-75."""
+    forms = (
+        ("CRC32B", "nanomips.sinc:1342", 8, 0xedb88320),
+        ("CRC32CB", "nanomips.sinc:1351", 8, 0x82f63b78),
+        ("CRC32CH", "nanomips.sinc:1360", 16, 0x82f63b78),
+        ("CRC32CW", "nanomips.sinc:1369", 32, 0x82f63b78),
+        ("CRC32H", "nanomips.sinc:1378", 16, 0xedb88320),
+        ("CRC32W", "nanomips.sinc:1387", 32, 0xedb88320),
+    )
+    inputs = ((0, 0), (0xffffffff, 0), (0, 0xffffffff),
+              (0x13579bdf, 0x2468ace0))
+    for mnemonic, constructor, bits, polynomial in forms:
+        for index, (seed, message) in enumerate(inputs):
+            value = seed ^ (message & ((1 << bits) - 1))
+            for _ in range(bits):
+                value = (value >> 1) ^ (polynomial if value & 1 else 0)
+            yield {
+                "case": f"{mnemonic.lower()}_generated_{index}",
+                "constructor": constructor,
+                "registers_in": f"a0={seed:#x};a1={message:#x}",
+                "registers_out": f"a0={value & 0xffffffff:#x}",
+                "pc": "next", "memory_in": "-", "memory_out": "-",
+                "status": "pass", "current_registers": "-", "current_memory": "-",
+            }

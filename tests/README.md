@@ -57,9 +57,15 @@ passes. To see the tests fail against those defects, run with
 `NANOMIPS_STRICT_PROPERTIES=1` in the environment. Remove an entry from
 `property_xfails.tsv` when its implementation is fixed.
 
+For the six optional CRC32 forms, a reference callback implements the ISA's
+bitwise reversed-polynomial recurrence. Six fixed cases plus 24 generated
+seed/message pairs compare the emulator result with independently calculated
+CRC values. This checks ordinary CRC operation when the CPU feature is
+present; it does not check the absent-feature reserved-instruction exception.
+
 Run `python3 tests/coverage.py` for the per-constructor depth. In the current
-suite, 253 constructors have decoder checks, 190 have at least one passing
-state scenario, four have an expected failing state scenario, and 59 have only
+suite, 253 constructors have decoder checks, 196 have at least one passing
+state scenario, four have an expected failing state scenario, and 53 have only
 decoder or structural checks. The emulator cannot execute several custom
 userops, and this suite does not validate privileged exceptions, MMU/EVA
 translation, cache effects, reservation races, or every operand and mode in

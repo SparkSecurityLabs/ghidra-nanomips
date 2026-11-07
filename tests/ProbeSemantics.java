@@ -1,6 +1,8 @@
 //@category nanoMIPS
 import ghidra.app.emulator.EmulatorHelper;
 import ghidra.app.script.GhidraScript;
+import ghidra.pcode.emulate.BreakCallBack;
+import ghidra.pcode.pcoderaw.PcodeOpRaw;
 import ghidra.program.model.address.Address;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,6 +13,22 @@ import java.util.List;
 import java.util.Map;
 
 public class ProbeSemantics extends GhidraScript {
+    private static class Crc32Reference extends BreakCallBack {
+        @Override public boolean pcodeCallback(PcodeOpRaw op) {
+            var state = emulate.getMemoryState();
+            long value = state.getValue(op.getInput(1));
+            long message = state.getValue(op.getInput(2));
+            long polynomial = state.getValue(op.getInput(3));
+            int bits = op.getInput(2).getSize() * 8;
+            value ^= message;
+            for (int bit = 0; bit < bits; bit++) {
+                value = (value >>> 1) ^ ((value & 1) != 0 ? polynomial : 0);
+            }
+            state.setValue(op.getOutput(), value & 0xffffffffL);
+            return true;
+        }
+    }
+
     @Override public void run() throws Exception {
         String[] args = getScriptArgs();
         Map<String,Address> addresses = new HashMap<>();
@@ -27,6 +45,7 @@ public class ProbeSemantics extends GhidraScript {
             Address address = fields[1].startsWith("0x") ? toAddr(fields[1]) : addresses.get(fields[1]);
             disassemble(address);
             EmulatorHelper emulator = new EmulatorHelper(currentProgram);
+            emulator.registerCallOtherCallback("crc32", new Crc32Reference());
             try {
                 emulator.writeRegister(emulator.getPCRegister(), address.getOffset());
                 if (!fields[2].equals("-")) {
