@@ -48,6 +48,17 @@ def cases():
     return result
 
 
+def extw_scenarios():
+    """Extract the low word of the ISA's shifted 64-bit concatenation."""
+    inputs = ((0x89abcdef, 0x01234567), (0xffffffff, 0x80000000))
+    for _, encoded, kind, shift in cases():
+        if kind != "last_operand":
+            continue
+        for rs, rt in inputs:
+            expected = (((rt << 32) | rs) >> shift) & 0xffffffff
+            yield encoded, shift, rs, rt, expected
+
+
 def relocated_flows(flow_cases):
     """Relocate flow encodings; PC-relative targets retain their displacement."""
     result = []

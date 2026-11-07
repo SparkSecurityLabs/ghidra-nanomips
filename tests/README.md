@@ -56,6 +56,8 @@ normal test run requires their exact known-bad result and flags unexpected
 passes. To see the tests fail against those defects, run with
 `NANOMIPS_STRICT_PROPERTIES=1` in the environment. Remove an entry from
 `property_xfails.tsv` when its implementation is fixed.
+The EXTW operand property has no expected failure after the shift-field fix;
+20 state scenarios also check the resulting 64-to-32-bit extraction.
 
 For the six optional CRC32 forms, a reference callback implements the ISA's
 bitwise reversed-polynomial recurrence. Six fixed cases plus 24 generated
