@@ -20,12 +20,13 @@ def cases():
 
     for barrier in (0, 1):
         for link in (0, 4, 31):
-            for source in (1, 6, 14):
+            for source in (1, 6, 14, 31):
                 # JALRC[32] / JALRC.HB: opcode[31:26], rt[25:21],
                 # rs[20:16], variant[15:12], reserved[11:0].
                 word = (0b010010 << 26) | (link << 21) | (source << 16)
                 word |= barrier << 12
-                flow = "COMPUTED_JUMP" if link == 0 else "COMPUTED_CALL"
+                flow = ("TERMINATOR" if link == 0 and source == 31 else
+                        "COMPUTED_JUMP" if link == 0 else "COMPUTED_CALL")
                 name = f"jalrc_{'hb_' if barrier else ''}link_{link}_source_{source}"
                 result.append((name, word_bytes(word), "link_flow", flow))
     return result

@@ -169,7 +169,8 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
             xfail = PROPERTY_XFAILS.get("extw_shift") if expected != 31 else None
         elif kind == "link_flow":
             observed = flow_type
-            wanted_op = "BRANCHIND" if expected == "COMPUTED_JUMP" else "CALLIND"
+            wanted_op = ("RETURN" if expected == "TERMINATOR" else
+                         "BRANCHIND" if expected == "COMPUTED_JUMP" else "CALLIND")
             correct = observed == expected and wanted_op in pcode.split(",")
             xfail = PROPERTY_XFAILS.get("zero_link_flow") if expected == "COMPUTED_JUMP" else None
         elif kind == "relocated_flow":
