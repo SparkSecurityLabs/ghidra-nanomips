@@ -9,7 +9,8 @@ import re
 import subprocess
 import tempfile
 import zipfile
-from spec_properties import (addiupc_scenarios, cases as property_cases, crc32_scenarios,
+from spec_properties import (addiupc_scenarios, branch_offset_scenarios,
+                             cases as property_cases, crc32_scenarios,
                              extw_scenarios,
                              register_scenarios, rotate_scenarios, rotx_scenarios,
                              relocated_decodes, relocated_flows)
@@ -36,7 +37,7 @@ with (ROOT / "tests/known_issues.tsv").open() as handle:
 with (ROOT / "tests/property_xfails.tsv").open() as handle:
     PROPERTY_XFAILS = {row["property"]: row for row in csv.DictReader(handle, delimiter="\t")}
 PROPERTY_CASES = (property_cases() + relocated_flows(FLOW_CASES)
-                  + relocated_decodes(CASES))
+                  + relocated_decodes(CASES) + list(branch_offset_scenarios(CASES)))
 ROTX_CASES = list(rotx_scenarios())
 ROTX_ADDRESSES = [0x8000 + 8*i for i in range(len(ROTX_CASES))]
 ROTATE_CASES = list(rotate_scenarios())
@@ -202,6 +203,7 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
         _, assembly, flow_type, _, pcode, _ = fields
         mnemonic = ("EXTW" if kind == "last_operand" else
                     expected[1] if kind == "relocated_flow" else
+                    expected[0] if kind == "branch_target" else
                     CASES[expected]["mnemonic"] if kind == "relocated_decode" else
                     "JALRC.HB" if "_hb_" in name else "JALRC")
         if assembly.split()[0] != mnemonic:
@@ -225,6 +227,15 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
             source_address, _, wanted_flow, source_target, wanted_op = expected
             wanted_target = ("" if source_target == "-" else
                              f"{address + int(source_target, 16) - source_address:08x}")
+            observed = (flow_type, fields[3], pcode)
+            correct = (flow_type == wanted_flow and fields[3] == wanted_target
+                       and wanted_op in pcode.split(","))
+            xfail = None
+        elif kind == "branch_target":
+            _, wanted_flow, offset = expected
+            wanted_target = f"{(address + len(encoded) + offset) & 0xffffffff:08x}"
+            wanted_op = "CBRANCH" if wanted_flow == "CONDITIONAL_JUMP" else (
+                "CALL" if wanted_flow == "UNCONDITIONAL_CALL" else "BRANCH")
             observed = (flow_type, fields[3], pcode)
             correct = (flow_type == wanted_flow and fields[3] == wanted_target
                        and wanted_op in pcode.split(","))

@@ -80,6 +80,46 @@ def relocated_decodes(instruction_cases):
     return result
 
 
+def branch_offset_scenarios(instruction_cases):
+    """Encode branch displacements from nanoMIPS32 ISA bit layouts."""
+    fixtures = {row["constructor"]: row for row in instruction_cases}
+    forms = (
+        ("nanomips.sinc:991", "lo12", (-2048, -2, 0, 2, 2046)),
+        ("nanomips.sinc:1034", "lo15", (-16384, -2, 0, 2, 16382)),
+        ("nanomips.sinc:1061", "hi8", (-128, -2, 0, 2, 126)),
+        ("nanomips.sinc:1025", "hi11", (-1024, -2, 0, 2, 1022)),
+        ("nanomips.sinc:1043", "u5", (2, 4, 16, 30)),
+        ("nanomips.sinc:1018", "hilo26", (-33554432, -2, 0, 2, 33554430)),
+        ("nanomips.sinc:2300", "hilo22", (-2097152, -2, 0, 2, 2097150)),
+    )
+    for constructor, form, offsets in forms:
+        fixture = fixtures[constructor]
+        raw = bytes.fromhex(fixture["bytes"])
+        base_hi = int.from_bytes(raw[:2], "little")
+        base_lo = int.from_bytes(raw[2:], "little") if len(raw) == 4 else 0
+        for offset in offsets:
+            if form == "lo12":
+                hi, lo = base_hi, (base_lo & ~0x7ff) | (offset & 0x7fe) | ((offset >> 11) & 1)
+            elif form == "lo15":
+                hi, lo = base_hi, (base_lo & ~0x3fff) | (offset & 0x3ffe) | ((offset >> 14) & 1)
+            elif form == "hi8":
+                hi, lo = (base_hi & ~0x7f) | (offset & 0x7e) | ((offset >> 7) & 1), 0
+            elif form == "hi11":
+                hi, lo = (base_hi & ~0x3ff) | (offset & 0x3fe) | ((offset >> 10) & 1), 0
+            elif form == "u5":
+                hi, lo = (base_hi & ~0xf) | ((offset >> 1) & 0xf), 0
+            else:
+                width = 26 if form == "hilo26" else 22
+                mask = 0x1ff if width == 26 else 0x1f
+                hi = (base_hi & ~mask) | ((offset >> 16) & mask)
+                lo = (offset & 0xfffe) | ((offset >> (width - 1)) & 1)
+            encoded = hi.to_bytes(2, "little")
+            if len(raw) == 4:
+                encoded += lo.to_bytes(2, "little")
+            yield (f"branch_{form}_{offset}", encoded, "branch_target",
+                   (fixture["mnemonic"], fixture["flow"], offset))
+
+
 def crc32_scenarios():
     """CRC operations from nanoMIPS32 ISA manual, pages 70-75."""
     forms = (
