@@ -246,6 +246,8 @@ nanomips.sinc:3924	XOR	2452	FALL_THROUGH	sampled
 nanomips.sinc:3932	XORI	66821510	FALL_THROUGH	sampled
 nanomips.sinc:3886	JALRC	01480000	COMPUTED_JUMP	assembled
 nanomips.sinc:3893	JALRC.HB	01480010	COMPUTED_JUMP	assembled
+nanomips.sinc:3902	JALRC	1f480000	TERMINATOR	assembled
+nanomips.sinc:3909	JALRC.HB	1f480010	TERMINATOR	assembled
 nanomips_mt.sinc:4	DMT	a120b00a	FALL_THROUGH	sampled
 nanomips_mt.sinc:14	DVPE	e020b00a	FALL_THROUGH	sampled
 nanomips_mt.sinc:24	EMT	0120b00e	FALL_THROUGH	sampled

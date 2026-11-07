@@ -3884,17 +3884,33 @@ stype_implicit_zero: hi_uimm0_5 is hi_uimm0_5 {}
 
 # A zero link register turns JALRC into an indirect jump.
 :JALRC rt, rs is
-	hi_pool10_6 = 0b010010 & rt & rt_raw = 0 & rs;
+	hi_pool10_6 = 0b010010 & rt & rt_raw = 0 & rs & rs_raw != 31;
 	lo_pool12_4 = 0b0000
 	{
 		goto [rs];
 	}
 
 :JALRC.HB rt, rs is
-	hi_pool10_6 = 0b010010 & rt & rt_raw = 0 & rs;
+	hi_pool10_6 = 0b010010 & rt & rt_raw = 0 & rs & rs_raw != 31;
 	lo_pool12_4 = 0b0001
 	{
 		clear_instruction_hazards();
 		clear_execution_hazards();
 		goto [rs];
+	}
+
+:JALRC rt, rs is
+	hi_pool10_6 = 0b010010 & rt & rt_raw = 0 & rs & rs_raw = 31;
+	lo_pool12_4 = 0b0000
+	{
+		return [rs];
+	}
+
+:JALRC.HB rt, rs is
+	hi_pool10_6 = 0b010010 & rt & rt_raw = 0 & rs & rs_raw = 31;
+	lo_pool12_4 = 0b0001
+	{
+		clear_instruction_hazards();
+		clear_execution_hazards();
+		return [rs];
 	}
