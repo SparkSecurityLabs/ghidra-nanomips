@@ -25,8 +25,8 @@ added, removed, or reordered forms. The `constructor` IDs in the TSV files are
 stable locators from the original fixture snapshot; the runner compares each
 decoded instruction with the current source line at the same constructor
 position, so source edits may change line numbers without changing case IDs.
-The 201 sampled vectors come from observed
-firmware instructions; the other 58 were assembled from the SLEIGH grammar
+The 201 sampled vectors come from observed instruction bytes;
+the other 58 were assembled from the SLEIGH grammar
 and checked against the intended constructor. `flow_cases.tsv` adds six
 target and p-code checks for direct branches and a return. It also checks the
 expected p-code branch opcode for every flow constructor.
