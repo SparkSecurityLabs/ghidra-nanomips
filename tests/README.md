@@ -20,9 +20,22 @@ constructor, size, mnemonic, and flow type; a source inventory check catches
 new or moved constructors. The 201 sampled vectors come from observed
 firmware instructions; the other 52 were assembled from the SLEIGH grammar
 and checked against the intended constructor. `flow_cases.tsv` adds six
-target and p-code checks for direct branches and a return.
+target and p-code checks for direct branches and a return. It also checks the
+expected p-code branch opcode for every flow constructor.
 
-These are decoder and regression tests. A passing case does not prove that its
-p-code implements the ISA correctly. Known semantic issues, including the
-conditional trap and paired-word cases, need independent reference assertions
-before their fixes are merged.
+`semantic_cases.tsv` runs one instruction at a time in Ghidra's emulator and
+compares the resulting PC, registers, and memory with reference values. It
+covers both outcomes of 18 conditional branches, arithmetic and bit operations,
+PC-relative addresses and calls, and direct and indexed loads and stores. Rows
+marked `xfail` assert a specific ISA mismatch while the relevant issue is open.
+`known_issues.tsv` checks structural failures that cannot be expressed as a
+successful emulator step. An unexpected pass requires reviewing and removing
+the corresponding expected-failure entry.
+
+Run `python3 tests/coverage.py` for the per-constructor depth. In the current
+suite, 253 constructors have decoder checks, 174 have at least one passing
+state scenario, six have an expected failing state scenario, and 73 have only
+decoder or structural checks. The emulator cannot execute several custom
+userops, and this suite does not validate privileged exceptions, MMU/EVA
+translation, cache effects, reservation races, or every operand and mode in
+the nanoMIPS ISA manual. A passing case establishes only its stated scenario.

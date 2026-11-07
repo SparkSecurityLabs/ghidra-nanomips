@@ -1,0 +1,10 @@
+constructor	issue	check
+nanomips.sinc:1427	NMI-14	operands_missing
+nanomips.sinc:1437	NMI-14	operands_missing
+nanomips.sinc:3765	NMI-05	unconditional_trap
+nanomips.sinc:3816	NMI-05	unconditional_trap
+nanomips.sinc:2811	NMI-08	unimplemented
+nanomips_mt.sinc:44	NMI-09	unimplemented
+nanomips_mt.sinc:51	NMI-09	unimplemented
+nanomips_mt.sinc:58	NMI-09	unimplemented
+nanomips_mt.sinc:68	NMI-09	unimplemented

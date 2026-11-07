@@ -21,6 +21,10 @@ for line in (ROOT / "tests/flow_cases.tsv").read_text().splitlines():
 
 with (ROOT / "tests/instruction_cases.tsv").open() as handle:
     CASES = list(csv.DictReader(handle, delimiter="\t"))
+with (ROOT / "tests/semantic_cases.tsv").open() as handle:
+    SEMANTIC_CASES = list(csv.DictReader(handle, delimiter="\t"))
+with (ROOT / "tests/known_issues.tsv").open() as handle:
+    KNOWN_ISSUES = list(csv.DictReader(handle, delimiter="\t"))
 source = []
 for filename in ("nanomips.sinc", "nanomips_mt.sinc"):
     for line_number, line in enumerate((ROOT / "data/languages" / filename).read_text().splitlines(), 1):
@@ -63,24 +67,30 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
     vectors = [(address, bytes.fromhex(row["bytes"])) for address, row in zip(instruction_addresses, CASES)]
     vectors += [(address, encoded) for address, encoded, *_ in FLOW_CASES]
     first = min(address for address, _ in vectors)
-    last = max(address + len(encoded) for address, encoded in vectors)
+    last = max(0x4100, *(address + len(encoded) for address, encoded in vectors))
     image = bytearray(last - first)
     for address, encoded in vectors:
         image[address - first:address - first + len(encoded)] = encoded
     binary = scratch / "instructions.bin"
     binary.write_bytes(image)
     output = scratch / "actual.tsv"
+    semantic_output = scratch / "semantics.tsv"
     env = os.environ.copy()
     env["HOME"] = str(home)
     env["XDG_CONFIG_HOME"] = str(home / ".config")
     run([str(GHIDRA / "support/analyzeHeadless"), str(scratch), "FlowTests",
          "-import", str(binary), "-loader", "BinaryLoader", "-loader-baseAddr", hex(first),
          "-processor", "nanomips:LE:32:default", "-noanalysis", "-scriptPath", str(ROOT / "tests"),
-         "-postScript", "ProbeFlow.java", str(output), *(hex(address) for address, _ in vectors)],
+         "-postScript", "ProbeFlow.java", str(output), *(hex(address) for address, _ in vectors),
+         "-postScript", "ProbeSemantics.java", str(ROOT / "tests/instruction_cases.tsv"),
+         str(ROOT / "tests/semantic_cases.tsv"), str(semantic_output)],
         env=env)
 
     actual = {int(fields[0], 16): fields[1:] for fields in (row.split("\t") for row in output.read_text().splitlines())}
     failures = []
+    flow_opcode = {"CONDITIONAL_JUMP": "CBRANCH", "UNCONDITIONAL_JUMP": "BRANCH",
+                   "UNCONDITIONAL_CALL": "CALL", "COMPUTED_JUMP": "BRANCHIND",
+                   "COMPUTED_CALL": "CALLIND"}
     for address, row in zip(instruction_addresses, CASES):
         fields = actual.get(address, [])
         encoded = bytes.fromhex(row["bytes"])
@@ -90,7 +100,10 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
         length, assembly, flow_type, flows, pcode, constructor = fields
         if (int(length) != len(encoded) or assembly.split()[0] != row["mnemonic"]
                 or flow_type != row["flow"] or constructor != row["constructor"]
-                or (not pcode and row["mnemonic"] != "NOP")):
+                or (not pcode and row["mnemonic"] != "NOP")
+                or (row["flow"] in flow_opcode and flow_opcode[row["flow"]] not in pcode.split(","))
+                or (row["flow"] == "TERMINATOR" and row["mnemonic"] in {"JRC", "RESTORE.JRC"}
+                    and "RETURN" not in pcode.split(","))):
             failures.append(f"{row['constructor']}: {fields}")
     for address, encoded, mnemonic, flow, target, op in FLOW_CASES:
         fields = actual.get(address, [])
@@ -103,9 +116,52 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
                 or flow_type != flow or flows != wanted_target
                 or op not in pcode.split(",")):
             failures.append(f"{address:#x}: {fields}")
+    for issue in KNOWN_ISSUES:
+        address = instruction_addresses[next(i for i, row in enumerate(CASES)
+                                             if row["constructor"] == issue["constructor"])]
+        _, assembly, _, _, pcode, _ = actual[address]
+        check = issue["check"]
+        observed = (len(assembly.split()) == 1 if check == "operands_missing"
+                    else "CBRANCH" not in pcode.split(",") if check == "unconditional_trap"
+                    else "UNIMPLEMENTED" in pcode.split(",") if check == "unimplemented"
+                    else False)
+        if not observed:
+            failures.append(f"{issue['issue']} no longer reproduced at {issue['constructor']}")
+    semantic_rows = list(csv.DictReader(semantic_output.open(), delimiter="\t"))
+    if len(semantic_rows) != len(SEMANTIC_CASES):
+        failures.append("missing semantic execution results")
+    address_by_id = {row["constructor"]: address for address, row in zip(instruction_addresses, CASES)}
+    for expected, result in zip(SEMANTIC_CASES, semantic_rows):
+        address = address_by_id[expected["constructor"]]
+        fields = actual[address]
+        target = fields[3]
+        wanted_pc = (address + int(fields[0]) if expected["pc"] == "next"
+                     else int(target, 16) if expected["pc"] == "target"
+                     else int(expected["pc"], 0))
+        wanted_regs = {name: int(value, 0) & 0xffffffff for name, value in
+                       (entry.split("=", 1) for entry in expected["registers_out"].split(";")
+                        if entry != "-")}
+        got_regs = {name: int(value, 16) & 0xffffffff for name, value in
+                    (entry.split("=", 1) for entry in result["registers"].split(";") if entry)}
+        wanted_memory = "" if expected["memory_out"] == "-" else expected["memory_out"].lower()
+        observed = (result["case"] == expected["case"] and result["ok"] == "true"
+                    and int(result["pc"] or "0", 16) == wanted_pc
+                    and got_regs == wanted_regs and result["memory"].lower() == wanted_memory)
+        if expected["status"] == "pass" and not observed:
+            failures.append(f"{expected['case']}: {result}")
+        if expected["status"] == "xfail":
+            current_regs = {name: int(value, 0) & 0xffffffff for name, value in
+                            (entry.split("=", 1) for entry in expected["current_registers"].split(";"))}
+            if (observed or result["ok"] != "true" or int(result["pc"] or "0", 16) != wanted_pc
+                    or got_regs != current_regs
+                    or result["memory"].lower() != expected["current_memory"].lower()):
+                failures.append(f"{expected['case']}: expected known failure, got {result}")
     for failure in failures:
         print("FAIL", failure)
-    print(f"{len(CASES)} constructor cases and {len(FLOW_CASES)} flow cases checked; "
+    print(f"{len(CASES)} constructor cases, {len(FLOW_CASES)} flow cases, "
+          f"{len(SEMANTIC_CASES)} semantic scenarios, "
+          f"{sum(row['status'] == 'xfail' for row in SEMANTIC_CASES)} expected value failures, "
+          f"{len(KNOWN_ISSUES)} known structural failures checked; "
           f"{len(failures)} failures")
     if failures:
         raise SystemExit(1)
