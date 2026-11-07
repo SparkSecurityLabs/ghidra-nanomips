@@ -1,5 +1,4 @@
 constructor	issue	check
-nanomips.sinc:2811	NMI-08	unimplemented
 nanomips_mt.sinc:44	NMI-09	unimplemented
 nanomips_mt.sinc:51	NMI-09	unimplemented
 nanomips_mt.sinc:58	NMI-09	unimplemented
