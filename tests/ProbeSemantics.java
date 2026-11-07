@@ -29,6 +29,15 @@ public class ProbeSemantics extends GhidraScript {
         }
     }
 
+    private static class OverflowReference extends BreakCallBack {
+        boolean seen;
+
+        @Override public boolean pcodeCallback(PcodeOpRaw op) {
+            seen = true;
+            return true;
+        }
+    }
+
     @Override public void run() throws Exception {
         String[] args = getScriptArgs();
         Map<String,Address> addresses = new HashMap<>();
@@ -46,6 +55,8 @@ public class ProbeSemantics extends GhidraScript {
             disassemble(address);
             EmulatorHelper emulator = new EmulatorHelper(currentProgram);
             emulator.registerCallOtherCallback("crc32", new Crc32Reference());
+            OverflowReference overflow = new OverflowReference();
+            emulator.registerCallOtherCallback("overflow_exception", overflow);
             try {
                 emulator.writeRegister(emulator.getPCRegister(), address.getOffset());
                 if (!fields[2].equals("-")) {
@@ -85,7 +96,8 @@ public class ProbeSemantics extends GhidraScript {
                 output.add(fields[0] + "\t" + ok + "\t"
                     + emulator.readRegister(emulator.getPCRegister()).toString(16) + "\t"
                     + registers + "\t" + memory + "\t"
-                    + String.valueOf(emulator.getLastError()).replace('\t', ' '));
+                    + (overflow.seen ? "overflow" :
+                       String.valueOf(emulator.getLastError()).replace('\t', ' ')));
             } catch (Exception e) {
                 output.add(fields[0] + "\tfalse\t\t\t\t" + e.toString().replace('\t', ' '));
             } finally {

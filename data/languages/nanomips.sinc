@@ -344,6 +344,7 @@ define pcodeop cacheop;
 define pcodeop clear_execution_hazards;
 define pcodeop clear_instruction_hazards;
 define pcodeop crc32;
+define pcodeop overflow_exception;
 define pcodeop disable_virtual_processors;
 define pcodeop enable_virtual_processors;
 define pcodeop ginvi;
