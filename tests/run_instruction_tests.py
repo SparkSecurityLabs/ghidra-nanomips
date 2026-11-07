@@ -9,7 +9,7 @@ import re
 import subprocess
 import tempfile
 import zipfile
-from spec_properties import (cases as property_cases, crc32_scenarios,
+from spec_properties import (addiupc_scenarios, cases as property_cases, crc32_scenarios,
                              register_scenarios, rotate_scenarios, rotx_scenarios,
                              relocated_decodes, relocated_flows)
 
@@ -40,6 +40,8 @@ ROTX_CASES = list(rotx_scenarios())
 ROTX_ADDRESSES = [0x8000 + 8*i for i in range(len(ROTX_CASES))]
 ROTATE_CASES = list(rotate_scenarios())
 ROTATE_ADDRESSES = [0x8100 + 8*i for i in range(len(ROTATE_CASES))]
+ADDIUPC_CASES = list(addiupc_scenarios())
+ADDIUPC_ADDRESSES = [0x9000 + 8*i for i in range(len(ADDIUPC_CASES))]
 SEMANTIC_CASES += [
     {"case": f"rotx_{shift}_{shiftx}_{stripe}_{index}",
      "constructor": hex(address), "registers_in": f"t0={value:#x}",
@@ -55,6 +57,12 @@ SEMANTIC_CASES += [
      "current_registers": "-", "current_memory": "-"}
     for index, (address, (_, mnemonic, registers_in, registers_out, amount))
     in enumerate(zip(ROTATE_ADDRESSES, ROTATE_CASES))]
+SEMANTIC_CASES += [
+    {"case": f"addiupc_{bits}_{offset}", "constructor": hex(address),
+     "registers_in": "-", "registers_out": f"a2={(address + bits // 8 + offset) & 0xffffffff:#x}",
+     "pc": "next", "memory_in": "-", "memory_out": "-", "status": "pass",
+     "current_registers": "-", "current_memory": "-"}
+    for address, (bits, offset, _) in zip(ADDIUPC_ADDRESSES, ADDIUPC_CASES)]
 STRICT_PROPERTIES = os.environ.get("NANOMIPS_STRICT_PROPERTIES") == "1"
 source = []
 for filename in ("nanomips.sinc", "nanomips_mt.sinc"):
@@ -106,6 +114,8 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
                 zip(ROTX_ADDRESSES, ROTX_CASES)]
     vectors += [(address, encoded) for address, (encoded, _, _, _, _) in
                 zip(ROTATE_ADDRESSES, ROTATE_CASES)]
+    vectors += [(address, encoded) for address, (_, _, encoded) in
+                zip(ADDIUPC_ADDRESSES, ADDIUPC_CASES)]
     first = min(address for address, _ in vectors)
     last = max(0x4100, *(address + len(encoded) for address, encoded in vectors))
     image = bytearray(last - first)
@@ -234,6 +244,10 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
         fields = actual.get(address, [])
         if len(fields) != 6 or fields[1].split()[0] != mnemonic:
             failures.append(f"{address:#x}: missing {mnemonic} decode: {fields}")
+    for address in ADDIUPC_ADDRESSES:
+        fields = actual.get(address, [])
+        if len(fields) != 6 or fields[1].split()[0] != "ADDIUPC":
+            failures.append(f"{address:#x}: missing ADDIUPC decode: {fields}")
     for issue in KNOWN_ISSUES:
         address = instruction_addresses[next(i for i, row in enumerate(CASES)
                                              if row["constructor"] == issue["constructor"])]
@@ -257,7 +271,8 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
                    else address_by_id[expected["constructor"]])
         fields = actual[address]
         target = fields[3]
-        wanted_pc = (address + int(fields[0]) if expected["pc"] == "next"
+        wanted_pc = (address if expected["pc"] == "self" else
+                     address + int(fields[0]) if expected["pc"] == "next"
                      else int(target, 16) if expected["pc"] == "target"
                      else int(expected["pc"], 0))
         wanted_regs = {name: int(value, 0) & 0xffffffff for name, value in
@@ -273,6 +288,8 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
             failures.append(f"{expected['case']}: {result}")
         if expected["status"] == "overflow" and (not observed or result["error"] != "overflow"):
             failures.append(f"{expected['case']}: expected overflow, got {result}")
+        if expected["status"] == "debug_break" and (not observed or result["error"] != "debug_break"):
+            failures.append(f"{expected['case']}: expected debug break, got {result}")
         if expected["status"] == "xfail":
             current_regs = {name: int(value, 0) & 0xffffffff for name, value in
                             (entry.split("=", 1) for entry in expected["current_registers"].split(";"))}

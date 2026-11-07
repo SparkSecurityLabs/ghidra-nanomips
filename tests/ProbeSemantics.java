@@ -57,6 +57,8 @@ public class ProbeSemantics extends GhidraScript {
             emulator.registerCallOtherCallback("crc32", new Crc32Reference());
             OverflowReference overflow = new OverflowReference();
             emulator.registerCallOtherCallback("overflow_exception", overflow);
+            OverflowReference debugBreak = new OverflowReference();
+            emulator.registerCallOtherCallback("debug_break", debugBreak);
             try {
                 emulator.writeRegister(emulator.getPCRegister(), address.getOffset());
                 if (!fields[2].equals("-")) {
@@ -96,7 +98,7 @@ public class ProbeSemantics extends GhidraScript {
                 output.add(fields[0] + "\t" + ok + "\t"
                     + emulator.readRegister(emulator.getPCRegister()).toString(16) + "\t"
                     + registers + "\t" + memory + "\t"
-                    + (overflow.seen ? "overflow" :
+                    + (debugBreak.seen ? "debug_break" : overflow.seen ? "overflow" :
                        String.valueOf(emulator.getLastError()).replace('\t', ' ')));
             } catch (Exception e) {
                 output.add(fields[0] + "\tfalse\t\t\t\t" + e.toString().replace('\t', ' '));

@@ -19,14 +19,14 @@ tests on every workflow execution.
 
 The runner builds this checkout and compiles its SLEIGH language in an isolated
 extension directory. `instruction_cases.tsv` has one byte vector for each of
-the 253 top-level SLEIGH instruction constructors. The test checks the exact
+the 259 top-level SLEIGH instruction constructors. The test checks the exact
 constructor, size, mnemonic, and flow type; a source inventory check catches
 added, removed, or reordered forms. The `constructor` IDs in the TSV files are
 stable locators from the original fixture snapshot; the runner compares each
 decoded instruction with the current source line at the same constructor
 position, so source edits may change line numbers without changing case IDs.
 The 201 sampled vectors come from observed
-firmware instructions; the other 52 were assembled from the SLEIGH grammar
+firmware instructions; the other 58 were assembled from the SLEIGH grammar
 and checked against the intended constructor. `flow_cases.tsv` adds six
 target and p-code checks for direct branches and a return. It also checks the
 expected p-code branch opcode for every flow constructor.
@@ -63,10 +63,17 @@ seed/message pairs compare the emulator result with independently calculated
 CRC values. This checks ordinary CRC operation when the CPU feature is
 present; it does not check the absent-feature reserved-instruction exception.
 
+The ADDIUPC vectors encode both widths from the ISA fields and check zero,
+positive, negative, and boundary displacements. SDBBP tests check a debug
+break marker for both widths, without modeling CP0 debug entry. RDHWR state
+tests cover CPUNum, Count, and UserLocal when access is allowed; guest and
+privilege checks are not modeled. SAVE/RESTORE cases also use another stack
+address.
+
 Run `python3 tests/coverage.py` for the per-constructor depth. In the current
-suite, 253 constructors have decoder checks, 196 have at least one passing
-state scenario, four have an expected failing state scenario, and 53 have only
-decoder or structural checks. The emulator cannot execute several custom
+suite, 259 constructors have decoder checks, 199 have at least one passing
+fixed state scenario, four have an expected failing state scenario, and 56
+have only decoder or structural checks. The emulator cannot execute several custom
 userops, and this suite does not validate privileged exceptions, MMU/EVA
 translation, cache effects, reservation races, or every operand and mode in
 the nanoMIPS ISA manual. A passing case establishes only its stated scenario.

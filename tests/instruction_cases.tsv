@@ -157,6 +157,8 @@ nanomips.sinc:2487	PREF	25a4ff98	FALL_THROUGH	assembled
 nanomips.sinc:2496	PREF	08840030	FALL_THROUGH	sampled
 nanomips.sinc:2506	PREFE	25a4001a	FALL_THROUGH	assembled
 nanomips.sinc:2518	RDHWR	8020c001	FALL_THROUGH	sampled
+nanomips.sinc:2503	RDHWR	8220c001	FALL_THROUGH	assembled
+nanomips.sinc:2511	RDHWR	9d20c001	FALL_THROUGH	assembled
 nanomips.sinc:2526	RDHWR	8120c009	FALL_THROUGH	assembled
 nanomips.sinc:2533	RDPGPR	85207fe1	FALL_THROUGH	assembled
 nanomips.sinc:2582	RESTORE.JRC	111f	TERMINATOR	sampled
@@ -177,8 +179,8 @@ nanomips.sinc:3103	SC	c4a42059	FALL_THROUGH	sampled
 nanomips.sinc:3119	SCE	85a4005a	FALL_THROUGH	assembled
 nanomips.sinc:3136	SCWP	c4a57959	FALL_THROUGH	sampled
 nanomips.sinc:3166	SCWPE	86a4295a	FALL_THROUGH	assembled
-nanomips.sinc:3198	SDBBP	1900f056	FALL_THROUGH	sampled
-nanomips.sinc:3207	SDBBP	1b10	FALL_THROUGH	sampled
+nanomips.sinc:3198	SDBBP	1900f056	TERMINATOR	sampled
+nanomips.sinc:3207	SDBBP	1b10	TERMINATOR	sampled
 nanomips.sinc:3213	SEB	f1220800	FALL_THROUGH	sampled
 nanomips.sinc:3222	SEH	b3204800	FALL_THROUGH	sampled
 nanomips.sinc:3231	SEQI	f3800060	FALL_THROUGH	sampled

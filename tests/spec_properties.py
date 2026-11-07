@@ -9,6 +9,22 @@ def word_bytes(word):
     return (word >> 16).to_bytes(2, "little") + (word & 0xffff).to_bytes(2, "little")
 
 
+def addiupc_scenarios():
+    """PC-relative address vectors from nanoMIPS32 ISA manual, page 29."""
+    displacements32 = (0, 2, -2, 0x1ffffe, -0x200000)
+    displacements48 = (0, 2, -2, 0x12345678, -0x80000000)
+    for bits, displacements in ((32, displacements32), (48, displacements48)):
+        for offset in displacements:
+            if bits == 32:
+                encoded = word_bytes((1 << 26) | (6 << 21)
+                                     | (offset & 0x1ffffe) | ((offset >> 21) & 1))
+            else:
+                encoded = ((0b011000 << 10) | (6 << 5) | 3).to_bytes(2, "little")
+                encoded += (offset & 0xffff).to_bytes(2, "little")
+                encoded += ((offset >> 16) & 0xffff).to_bytes(2, "little")
+            yield bits, offset, encoded
+
+
 def cases():
     result = []
     for shift in (0, 1, 7, 8, 15, 16, 23, 24, 30, 31):

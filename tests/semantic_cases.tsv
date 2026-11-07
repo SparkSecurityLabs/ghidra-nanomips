@@ -233,3 +233,12 @@ crc32ch	nanomips.sinc:1360	a0=0x12345678;a1=0xdeadbeef	a0=0xd78220dc	next	-	-	pa
 crc32cw	nanomips.sinc:1369	a0=0x12345678;a1=0xdeadbeef	a0=0xf3ed4b20	next	-	-	pass	-	-
 crc32h	nanomips.sinc:1378	a0=0x12345678;a1=0xdeadbeef	a0=0x90d164a3	next	-	-	pass	-	-
 crc32w	nanomips.sinc:1387	a0=0x12345678;a1=0xdeadbeef	a0=0xb537e7cd	next	-	-	pass	-	-
+sdbbp32_debug_break	nanomips.sinc:3198	-	-	self	-	-	debug_break	-	-
+sdbbp16_debug_break	nanomips.sinc:3207	-	-	self	-	-	debug_break	-	-
+rdhwr_cpunum	nanomips.sinc:2518	C0.EBase=0x123	a0=0x123	next	-	-	pass	-	-
+rdhwr_count	nanomips.sinc:2503	C0.Count=0x12345678	a0=0x12345678	next	-	-	pass	-	-
+rdhwr_userlocal	nanomips.sinc:2511	C0.UserLocal=0x80000000	a0=0x80000000	next	-	-	pass	-	-
+save_ra_16_high_stack	nanomips.sinc:2855	sp=0x10000;ra=0x11223344	sp=0xfff0	next	0xfffc:aabbccdd	0xfffc:44332211	pass	-	-
+restore_ra_16_high_stack	nanomips.sinc:2582	sp=0xfff0;ra=0	sp=0x10000;ra=0x7002	0x7002	0xfffc:02700000	0xfffc:02700000	pass	-	-
+save_s0_s1_32_high_stack	nanomips.sinc:3036	sp=0x10000;s0=0x11223344;s1=0x55667788	sp=0xfff0	next	0xfff8:aabbccddeeff0011	0xfff8:8877665544332211	pass	-	-
+restore_s0_s1_return_32_high_stack	nanomips.sinc:2777	sp=0xfff0;ra=0x7002;s0=0;s1=0	sp=0x10000;s0=0x11223344;s1=0x55667788	0x7002	0xfff8:8877665544332211	0xfff8:8877665544332211	pass	-	-
