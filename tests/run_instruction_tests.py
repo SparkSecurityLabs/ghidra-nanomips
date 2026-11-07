@@ -10,6 +10,7 @@ import subprocess
 import tempfile
 import zipfile
 from spec_properties import (cases as property_cases, crc32_scenarios,
+                             rotx_scenarios,
                              relocated_decodes, relocated_flows)
 
 
@@ -34,6 +35,16 @@ with (ROOT / "tests/property_xfails.tsv").open() as handle:
     PROPERTY_XFAILS = {row["property"]: row for row in csv.DictReader(handle, delimiter="\t")}
 PROPERTY_CASES = (property_cases() + relocated_flows(FLOW_CASES)
                   + relocated_decodes(CASES))
+ROTX_CASES = list(rotx_scenarios())
+ROTX_ADDRESSES = [0x8000 + 8*i for i in range(len(ROTX_CASES))]
+SEMANTIC_CASES += [
+    {"case": f"rotx_{shift}_{shiftx}_{stripe}_{index}",
+     "constructor": hex(address), "registers_in": f"t0={value:#x}",
+     "registers_out": f"a0={expected:#x}", "pc": "next",
+     "memory_in": "-", "memory_out": "-", "status": "pass",
+     "current_registers": "-", "current_memory": "-"}
+    for index, (address, (_, value, expected, (shift, shiftx, stripe)))
+    in enumerate(zip(ROTX_ADDRESSES, ROTX_CASES))]
 STRICT_PROPERTIES = os.environ.get("NANOMIPS_STRICT_PROPERTIES") == "1"
 source = []
 for filename in ("nanomips.sinc", "nanomips_mt.sinc"):
@@ -81,6 +92,8 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
     property_addresses = [0x6000 + 8*i for i in range(len(PROPERTY_CASES))]
     vectors += [(address, encoded) for address, (_, encoded, _, _) in
                 zip(property_addresses, PROPERTY_CASES)]
+    vectors += [(address, encoded) for address, (encoded, _, _, _) in
+                zip(ROTX_ADDRESSES, ROTX_CASES)]
     first = min(address for address, _ in vectors)
     last = max(0x4100, *(address + len(encoded) for address, encoded in vectors))
     image = bytearray(last - first)
@@ -201,6 +214,10 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
                 failures.append(f"{name}: expected {xfail['issue']} mismatch, got {fields}")
         elif not correct:
             failures.append(f"{name}: expected {expected}, got {fields}")
+    for address in ROTX_ADDRESSES:
+        fields = actual.get(address, [])
+        if len(fields) != 6 or fields[1].split()[0] != "ROTX":
+            failures.append(f"{address:#x}: missing ROTX decode: {fields}")
     for issue in KNOWN_ISSUES:
         address = instruction_addresses[next(i for i, row in enumerate(CASES)
                                              if row["constructor"] == issue["constructor"])]

@@ -78,3 +78,28 @@ def crc32_scenarios():
                 "pc": "next", "memory_in": "-", "memory_out": "-",
                 "status": "pass", "current_registers": "-", "current_memory": "-",
             }
+
+
+def rotx_scenarios():
+    """ROTX bit network from nanoMIPS32 ISA manual, revision 01.01, page 160."""
+    parameters = ((0, 0, 0), (1, 8, 0), (4, 12, 1), (28, 4, 0),
+                  (17, 10, 0), (31, 30, 1), (5, 6, 1))
+    inputs = (0x01234567, 0x89abcdef)
+    for shift, shiftx, stripe in parameters:
+        word = ((0b100000 << 26) | (4 << 21) | (12 << 16) | (0b1101 << 12)
+                | ((shiftx // 2) << 7) | (stripe << 6) | shift)
+        encoded = word_bytes(word)
+        for value in inputs:
+            previous = value | (value << 32)
+            for distance, limit, selector in ((16, 47, 8), (8, 39, 4),
+                                              (4, 35, 2), (2, 33, 1), (1, 32, 0)):
+                result = previous
+                for bit in range(limit):
+                    selected = (shift if selector == 0 or bit & selector else shiftx)
+                    if distance == 16 and stripe and not bit & 4:
+                        selected = ~selected
+                    if selected & distance:
+                        source = (previous >> (bit + distance)) & 1
+                        result = (result & ~(1 << bit)) | (source << bit)
+                previous = result
+            yield encoded, value, previous & 0xffffffff, (shift, shiftx, stripe)
