@@ -24,7 +24,7 @@ public class ProbeSemantics extends GhidraScript {
         List<String> cases = Files.readAllLines(Path.of(args[1]));
         for (int i = 1; i < cases.size(); i++) {
             String[] fields = cases.get(i).split("\t", -1);
-            Address address = addresses.get(fields[1]);
+            Address address = fields[1].startsWith("0x") ? toAddr(fields[1]) : addresses.get(fields[1]);
             disassemble(address);
             EmulatorHelper emulator = new EmulatorHelper(currentProgram);
             try {
@@ -41,7 +41,11 @@ public class ProbeSemantics extends GhidraScript {
                         emulator.writeMemory(toAddr(item[0]), HexFormat.of().parseHex(item[1]));
                     }
                 }
-                boolean ok = emulator.step(monitor);
+                boolean ok = true;
+                int steps = fields.length > 10 ? Integer.parseInt(fields[10]) : 1;
+                for (int step = 0; step < steps && ok; step++) {
+                    ok = emulator.step(monitor);
+                }
                 StringBuilder registers = new StringBuilder();
                 if (!fields[3].equals("-")) {
                     for (String entry : fields[3].split(";")) {

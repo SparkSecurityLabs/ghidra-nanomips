@@ -23,6 +23,8 @@ with (ROOT / "tests/instruction_cases.tsv").open() as handle:
     CASES = list(csv.DictReader(handle, delimiter="\t"))
 with (ROOT / "tests/semantic_cases.tsv").open() as handle:
     SEMANTIC_CASES = list(csv.DictReader(handle, delimiter="\t"))
+with (ROOT / "tests/sequence_cases.tsv").open() as handle:
+    SEQUENCE_CASES = list(csv.DictReader(handle, delimiter="\t"))
 with (ROOT / "tests/known_issues.tsv").open() as handle:
     KNOWN_ISSUES = list(csv.DictReader(handle, delimiter="\t"))
 source = []
@@ -66,6 +68,8 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
     instruction_addresses = [0x2000 + 8*i for i in range(len(CASES))]
     vectors = [(address, bytes.fromhex(row["bytes"])) for address, row in zip(instruction_addresses, CASES)]
     vectors += [(address, encoded) for address, encoded, *_ in FLOW_CASES]
+    vectors += [(int(row["constructor"], 0), bytes.fromhex(row["bytes"]))
+                for row in SEQUENCE_CASES]
     first = min(address for address, _ in vectors)
     last = max(0x4100, *(address + len(encoded) for address, encoded in vectors))
     image = bytearray(last - first)
@@ -75,6 +79,7 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
     binary.write_bytes(image)
     output = scratch / "actual.tsv"
     semantic_output = scratch / "semantics.tsv"
+    sequence_output = scratch / "sequences.tsv"
     env = os.environ.copy()
     env["HOME"] = str(home)
     env["XDG_CONFIG_HOME"] = str(home / ".config")
@@ -83,7 +88,9 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
          "-processor", "nanomips:LE:32:default", "-noanalysis", "-scriptPath", str(ROOT / "tests"),
          "-postScript", "ProbeFlow.java", str(output), *(hex(address) for address, _ in vectors),
          "-postScript", "ProbeSemantics.java", str(ROOT / "tests/instruction_cases.tsv"),
-         str(ROOT / "tests/semantic_cases.tsv"), str(semantic_output)],
+         str(ROOT / "tests/semantic_cases.tsv"), str(semantic_output),
+         "-postScript", "ProbeSemantics.java", str(ROOT / "tests/instruction_cases.tsv"),
+         str(ROOT / "tests/sequence_cases.tsv"), str(sequence_output)],
         env=env)
 
     actual = {int(fields[0], 16): fields[1:] for fields in (row.split("\t") for row in output.read_text().splitlines())}
@@ -106,7 +113,8 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
                     and assembly != exact_assembly[row["constructor"]])
                 or (not pcode and row["mnemonic"] != "NOP")
                 or (row["flow"] in flow_opcode and flow_opcode[row["flow"]] not in pcode.split(","))
-                or (row["mnemonic"] in {"TEQ", "TNE"} and "CBRANCH" not in pcode.split(","))
+                or (row["mnemonic"] in {"TEQ", "TNE"}
+                    and not {"CBRANCH", "CALLOTHER"}.issubset(pcode.split(",")))
                 or (row["flow"] == "TERMINATOR" and row["mnemonic"] in {"JRC", "RESTORE.JRC"}
                     and "RETURN" not in pcode.split(","))):
             failures.append(f"{row['constructor']}: {fields}")
@@ -133,11 +141,15 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
         if not observed:
             failures.append(f"{issue['issue']} no longer reproduced at {issue['constructor']}")
     semantic_rows = list(csv.DictReader(semantic_output.open(), delimiter="\t"))
+    sequence_rows = list(csv.DictReader(sequence_output.open(), delimiter="\t"))
     if len(semantic_rows) != len(SEMANTIC_CASES):
         failures.append("missing semantic execution results")
+    if len(sequence_rows) != len(SEQUENCE_CASES):
+        failures.append("missing sequence execution results")
     address_by_id = {row["constructor"]: address for address, row in zip(instruction_addresses, CASES)}
-    for expected, result in zip(SEMANTIC_CASES, semantic_rows):
-        address = address_by_id[expected["constructor"]]
+    for expected, result in zip(SEMANTIC_CASES + SEQUENCE_CASES, semantic_rows + sequence_rows):
+        address = (int(expected["constructor"], 0) if expected["constructor"].startswith("0x")
+                   else address_by_id[expected["constructor"]])
         fields = actual[address]
         target = fields[3]
         wanted_pc = (address + int(fields[0]) if expected["pc"] == "next"
@@ -164,7 +176,7 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
     for failure in failures:
         print("FAIL", failure)
     print(f"{len(CASES)} constructor cases, {len(FLOW_CASES)} flow cases, "
-          f"{len(SEMANTIC_CASES)} semantic scenarios, "
+          f"{len(SEMANTIC_CASES)} semantic scenarios, {len(SEQUENCE_CASES)} sequences, "
           f"{sum(row['status'] == 'xfail' for row in SEMANTIC_CASES)} expected value failures, "
           f"{len(KNOWN_ISSUES)} known structural failures checked; "
           f"{len(failures)} failures")

@@ -1,0 +1,9 @@
+case	constructor	registers_in	registers_out	pc	memory_in	memory_out	status	current_registers	current_memory	steps	bytes
+add_then_return	0x5000	a0=10;a1=20;ra=0x7000	a0=30;ra=0x7000	0x7000	-	-	pass	-	-	2	a4201021e0db
+jalrc_then_return	0x5100	a2=0x5104;ra=0	ra=0x5102	0x5102	-	-	pass	-	-	2	d0d80890e0db
+save_then_restore_return	0x5200	sp=0x4000;ra=0x7000	sp=0x4000;ra=0x7000	0x7000	0x3ffc:00000000	0x3ffc:00700000	pass	-	-	2	111e111f
+store_then_load_multiple	0x5300	sp=0x3ff4;a5=0x4000;a0=0x11223344;a1=0	a0=0x11223344;a1=0x55667788	0x5308	0x4000:0000000088776655	0x4000:4433221188776655	pass	-	-	2	89a4001c9da40c24
+scaled_branch_skips_nops	0x5400	a0=2;a1=5	a0=7	0x540c	-	-	pass	-	-	2	0448008008900890a4201021
+beqc_taken	0x5500	s0=7;s2=7;a0=10;a1=5	a0=15	0x550e	-	-	pass	-	-	2	04d9a420102108900890a4201021
+beqc_not_taken	0x5600	s0=7;s2=8;a0=10;a1=5	a0=15	0x5606	-	-	pass	-	-	2	04d9a420102108900890a4201021
+save_restore_pair_32	0x5700	sp=0x4000;s0=0x11223344;s1=0x55667788;ra=0x7000	sp=0x4000;s0=0x11223344;s1=0x55667788;ra=0x7000	0x7000	0x3ff8:0000000000000000	0x3ff8:8877665544332211	pass	-	-	2	0282103002821330

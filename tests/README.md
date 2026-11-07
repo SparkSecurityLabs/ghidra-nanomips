@@ -32,6 +32,9 @@ compares the resulting PC, registers, and memory with reference values. It
 covers both outcomes of 18 conditional branches, arithmetic and bit operations,
 PC-relative addresses and calls, and direct and indexed loads and stores. Rows
 marked `xfail` assert a specific ISA mismatch while the relevant issue is open.
+`sequence_cases.tsv` runs eight two-instruction paths that cover calls and
+returns, both outcomes of a branch, stack save/restore, and multi-register
+stores followed by loads.
 `known_issues.tsv` checks structural failures that cannot be expressed as a
 successful emulator step. An unexpected pass requires reviewing and removing
 the corresponding expected-failure entry.
