@@ -312,8 +312,10 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
         observed = (result["case"] == expected["case"] and result["ok"] == "true"
                     and int(result["pc"] or "0", 16) == wanted_pc
                     and got_regs == wanted_regs and result["memory"].lower() == wanted_memory)
-        if expected["status"] == "pass" and not observed:
+        if expected["status"] == "pass" and (not observed or result["error"] == "trap"):
             failures.append(f"{expected['case']}: {result}")
+        if expected["status"] == "trap" and (not observed or result["error"] != "trap"):
+            failures.append(f"{expected['case']}: expected trap, got {result}")
         if expected["status"] == "overflow" and (not observed or result["error"] != "overflow"):
             failures.append(f"{expected['case']}: expected overflow, got {result}")
         if expected["status"] == "debug_break" and (not observed or result["error"] != "debug_break"):
