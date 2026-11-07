@@ -202,3 +202,15 @@ store_conditional_without_reservation_3103	nanomips.sinc:3103	a2=0x11223344;a0=0
 store_conditional_without_reservation_3119	nanomips.sinc:3119	a0=0x11223344;a1=0x4000	a0=0	next	0x4000:aabbccdd	0x4000:aabbccdd	xfail	a0=1	0x4000:44332211
 paired_store_without_reservation_3136	nanomips.sinc:3136	t2=0x11223344;t3=0x55667788;a0=0x4000	t2=0	next	0x4000:aabbccddeeff0011	0x4000:aabbccddeeff0011	xfail	t2=1	0x4000:8877665544332211
 paired_store_without_reservation_3166	nanomips.sinc:3166	a0=0x11223344;a1=0x55667788;a2=0x4000	a0=0	next	0x4000:aabbccddeeff0011	0x4000:aabbccddeeff0011	xfail	a0=1	0x4000:8877665544332211
+save_ra_16	nanomips.sinc:2855	sp=0x4000;ra=0x11223344	sp=0x3ff0	next	0x3ffc:aabbccdd	0x3ffc:44332211	pass	-	-
+restore_ra_16	nanomips.sinc:2582	sp=0x3ff0;ra=0	sp=0x4000;ra=0x5000	0x5000	0x3ffc:00500000	0x3ffc:00500000	pass	-	-
+swm_a0	nanomips.sinc:3661	a5=0x4000;a0=0x11223344	-	next	0x4000:aabbccdd	0x4000:44332211	pass	-	-
+lwm_a0_a1	nanomips.sinc:2205	sp=0x3ff4	a0=0x44332211;a1=0x88776655	next	0x4000:1122334455667788	0x4000:1122334455667788	pass	-	-
+mfc0_ebase	nanomips.sinc:2253	C0.EBase=0x12345678	a0=0x12345678	next	-	-	pass	-	-
+save_s0_s1_32	nanomips.sinc:3036	sp=0x4000;s0=0x11223344;s1=0x55667788	sp=0x3ff0	next	0x3ff8:aabbccddeeff0011	0x3ff8:8877665544332211	pass	-	-
+restore_ra_s0_32	nanomips.sinc:2765	sp=0x3ff0;ra=0;s0=0	sp=0x4000;ra=0x5000;s0=0x11223344	next	0x3ff8:4433221100500000	0x3ff8:4433221100500000	pass	-	-
+restore_s0_s1_return_32	nanomips.sinc:2777	sp=0x3ff0;ra=0x5000;s0=0;s1=0	sp=0x4000;s0=0x11223344;s1=0x55667788	0x5000	0x3ff8:8877665544332211	0x3ff8:8877665544332211	pass	-	-
+div_signed	nanomips.sinc:1427	a2=0xfffffff4;a6=3	a2=0xfffffffc	next	-	-	pass	-	-
+div_unsigned	nanomips.sinc:1437	a1=20;a2=3	a1=6	next	-	-	pass	-	-
+mtc0_config7	nanomips.sinc:2350	a0=0x12345678;c0_16_7=0	c0_16_7=0x12345678	next	-	-	pass	-	-
+lwpc_remote_address	nanomips.sinc:2218	-	a2=0x12345678	next	0x89664cc0:78563412	0x89664cc0:78563412	pass	-	-
