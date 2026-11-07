@@ -91,6 +91,8 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
     flow_opcode = {"CONDITIONAL_JUMP": "CBRANCH", "UNCONDITIONAL_JUMP": "BRANCH",
                    "UNCONDITIONAL_CALL": "CALL", "COMPUTED_JUMP": "BRANCHIND",
                    "COMPUTED_CALL": "CALLIND"}
+    exact_assembly = {"nanomips.sinc:1427": "DIV a2,a2,a6",
+                      "nanomips.sinc:1437": "DIVU a1,a1,a2"}
     for address, row, (source_id, _) in zip(instruction_addresses, CASES, source):
         fields = actual.get(address, [])
         encoded = bytes.fromhex(row["bytes"])
@@ -100,6 +102,8 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
         length, assembly, flow_type, flows, pcode, constructor = fields
         if (int(length) != len(encoded) or assembly.split()[0] != row["mnemonic"]
                 or flow_type != row["flow"] or constructor != source_id
+                or (row["constructor"] in exact_assembly
+                    and assembly != exact_assembly[row["constructor"]])
                 or (not pcode and row["mnemonic"] != "NOP")
                 or (row["flow"] in flow_opcode and flow_opcode[row["flow"]] not in pcode.split(","))
                 or (row["mnemonic"] in {"TEQ", "TNE"} and "CBRANCH" not in pcode.split(","))
