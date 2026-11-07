@@ -37,8 +37,8 @@ successful emulator step. An unexpected pass requires reviewing and removing
 the corresponding expected-failure entry.
 
 Run `python3 tests/coverage.py` for the per-constructor depth. In the current
-suite, 253 constructors have decoder checks, 188 have at least one passing
-state scenario, four have an expected failing state scenario, and 61 have only
+suite, 253 constructors have decoder checks, 190 have at least one passing
+state scenario, four have an expected failing state scenario, and 59 have only
 decoder or structural checks. The emulator cannot execute several custom
 userops, and this suite does not validate privileged exceptions, MMU/EVA
 translation, cache effects, reservation races, or every operand and mode in

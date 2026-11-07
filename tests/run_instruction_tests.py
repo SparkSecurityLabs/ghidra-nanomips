@@ -102,6 +102,7 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
                 or flow_type != row["flow"] or constructor != source_id
                 or (not pcode and row["mnemonic"] != "NOP")
                 or (row["flow"] in flow_opcode and flow_opcode[row["flow"]] not in pcode.split(","))
+                or (row["mnemonic"] in {"TEQ", "TNE"} and "CBRANCH" not in pcode.split(","))
                 or (row["flow"] == "TERMINATOR" and row["mnemonic"] in {"JRC", "RESTORE.JRC"}
                     and "RETURN" not in pcode.split(","))):
             failures.append(f"{row['constructor']}: {fields}")
