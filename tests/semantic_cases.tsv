@@ -1,4 +1,8 @@
 case	constructor	registers_in	registers_out	pc	memory_in	memory_out	status	current_registers	current_memory
+seqi_equal_zero	nanomips.sinc:3231	s3=0	a3=1	next	-	-	pass	-	-
+seqi_unequal_zero	nanomips.sinc:3231	s3=1	a3=0	next	-	-	pass	-	-
+subu32_signed_overflow_wrap	nanomips.sinc:3447	a2=0x80000000;a4=1	a0=0x7fffffff	next	-	-	pass	-	-
+subu16_signed_overflow_wrap	nanomips.sinc:3456	a2=0x80000000;a1=1	a1=0x7fffffff	next	-	-	pass	-	-
 branch_997_taken	nanomips.sinc:991	a1=0	-	target	-	-	pass	-	-
 branch_997_not_taken	nanomips.sinc:991	a1=0x8000	-	next	-	-	pass	-	-
 branch_1010_taken	nanomips.sinc:1004	a1=0x4000	-	target	-	-	pass	-	-
