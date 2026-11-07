@@ -1,0 +1,15 @@
+name: nanoMIPS instructions
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  instruction-tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build test image
+        run: docker build -f Dockerfile.test -t nanomips-instruction-tests .
+      - name: Run tests
+        run: docker run --rm nanomips-instruction-tests

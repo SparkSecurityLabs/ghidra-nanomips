@@ -2,6 +2,7 @@
 import ghidra.app.script.GhidraScript;
 import ghidra.app.util.PseudoDisassembler;
 import ghidra.app.util.PseudoInstruction;
+import ghidra.app.plugin.processors.sleigh.SleighInstructionPrototype;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.pcode.PcodeOp;
 import java.nio.file.Files;
@@ -32,9 +33,12 @@ public class ProbeFlow extends GhidraScript {
                 if (pcode.length() > 0) pcode.append(',');
                 pcode.append(op.getMnemonic());
             }
+            var constructor = ((SleighInstructionPrototype) instruction.getPrototype())
+                .getRootState().getConstructor();
             rows.add(args[i] + "\t" + instruction.getLength() + "\t"
                 + instruction + "\t" + instruction.getFlowType() + "\t"
-                + flows + "\t" + pcode);
+                + flows + "\t" + pcode + "\t"
+                + constructor.getSourceFile() + ":" + constructor.getLineno());
         }
         Files.write(Path.of(args[0]), rows);
     }

@@ -1,0 +1,7 @@
+.git
+.gradle
+build
+bin
+dist
+*.iml
+tests/__pycache__
