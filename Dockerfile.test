@@ -1,4 +1,4 @@
-FROM ubuntu:24.04
+FROM ubuntu:24.04 AS base
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl openjdk-21-jdk-headless python3 unzip \
@@ -13,5 +13,14 @@ RUN curl -fsSL -o /tmp/ghidra.zip \
 
 ENV GHIDRA_INSTALL_DIR=/opt/ghidra_12.1.2_PUBLIC
 WORKDIR /src
+COPY gradlew ./
+COPY gradle/wrapper/ gradle/wrapper/
+RUN ./gradlew --version
 COPY . .
 CMD ["python3", "tests/run_instruction_tests.py"]
+
+FROM base AS test
+ARG TEST_RUN=local
+RUN printf 'Test run %s\n' "$TEST_RUN" && python3 tests/run_instruction_tests.py
+
+FROM base AS runtime

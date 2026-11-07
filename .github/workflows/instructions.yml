@@ -4,12 +4,22 @@ on:
   push:
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   instruction-tests:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Build test image
-        run: docker build -f Dockerfile.test -t nanomips-instruction-tests .
-      - name: Run tests
-        run: docker run --rm nanomips-instruction-tests
+      - uses: docker/setup-buildx-action@v4
+      - name: Run instruction tests
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile.test
+          target: test
+          build-args: TEST_RUN=${{ github.run_id }}-${{ github.run_attempt }}
+          cache-from: type=gha,scope=nanomips-instructions
+          cache-to: type=gha,scope=nanomips-instructions,mode=max,ignore-error=true

@@ -6,12 +6,16 @@ Run with Ghidra 12.1.2 and Python 3:
 GHIDRA_INSTALL_DIR=/path/to/ghidra_12.1.2_PUBLIC python3 tests/run_instruction_tests.py
 ```
 
-Or run the same command in Docker, as GitHub Actions does:
+Or run the same command locally in Docker:
 
 ```sh
 docker build -f Dockerfile.test -t nanomips-instruction-tests .
 docker run --rm nanomips-instruction-tests
 ```
+
+GitHub Actions runs the `test` Docker build target. Buildx caches the Ghidra
+and Gradle setup layers between runs, while a unique build argument runs the
+tests on every workflow execution.
 
 The runner builds this checkout and compiles its SLEIGH language in an isolated
 extension directory. `instruction_cases.tsv` has one byte vector for each of
