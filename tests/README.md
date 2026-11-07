@@ -46,9 +46,12 @@ the corresponding expected-failure entry.
 `spec_properties.py` generates deterministic ISA-based vectors for encoded
 `EXTW` shift values and zero/nonzero link registers in both 32-bit `JALRC`
 forms. It also relocates each fixed flow fixture three times and checks that
-PC-relative targets move with the instruction. The expected values come from
-the nanoMIPS32 ISA manual and the known-good flow fixtures, independently of
-the SLEIGH implementation. `property_xfails.tsv` names current defects; the
+PC-relative targets move with the instruction. Every constructor fixture is
+additionally decoded at two new addresses; those metamorphic checks require
+the same size, constructor, flow category, and p-code operations, with direct
+targets shifted by the address delta. The field and link expectations come
+from the nanoMIPS32 ISA manual; relocation checks compare against the fixed
+fixtures. `property_xfails.tsv` names current defects; the
 normal test run requires their exact known-bad result and flags unexpected
 passes. To see the tests fail against those defects, run with
 `NANOMIPS_STRICT_PROPERTIES=1` in the environment. Remove an entry from

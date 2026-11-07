@@ -40,3 +40,13 @@ def relocated_flows(flow_cases):
             result.append((name, encoded, "relocated_flow",
                            (address, mnemonic, flow, target, op)))
     return result
+
+
+def relocated_decodes(instruction_cases):
+    """Place every constructor fixture at two independent addresses."""
+    result = []
+    for index, row in enumerate(instruction_cases):
+        for copy in range(2):
+            result.append((f"relocated_decode_{index}_{copy}",
+                           bytes.fromhex(row["bytes"]), "relocated_decode", index))
+    return result

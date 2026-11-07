@@ -9,7 +9,7 @@ import re
 import subprocess
 import tempfile
 import zipfile
-from spec_properties import cases as property_cases, relocated_flows
+from spec_properties import cases as property_cases, relocated_decodes, relocated_flows
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -30,7 +30,8 @@ with (ROOT / "tests/known_issues.tsv").open() as handle:
     KNOWN_ISSUES = list(csv.DictReader(handle, delimiter="\t"))
 with (ROOT / "tests/property_xfails.tsv").open() as handle:
     PROPERTY_XFAILS = {row["property"]: row for row in csv.DictReader(handle, delimiter="\t")}
-PROPERTY_CASES = property_cases() + relocated_flows(FLOW_CASES)
+PROPERTY_CASES = (property_cases() + relocated_flows(FLOW_CASES)
+                  + relocated_decodes(CASES))
 STRICT_PROPERTIES = os.environ.get("NANOMIPS_STRICT_PROPERTIES") == "1"
 source = []
 for filename in ("nanomips.sinc", "nanomips_mt.sinc"):
@@ -146,6 +147,7 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
         _, assembly, flow_type, _, pcode, _ = fields
         mnemonic = ("EXTW" if kind == "last_operand" else
                     expected[1] if kind == "relocated_flow" else
+                    CASES[expected]["mnemonic"] if kind == "relocated_decode" else
                     "JALRC.HB" if "_hb_" in name else "JALRC")
         if assembly.split()[0] != mnemonic:
             failures.append(f"{name}: wrong mnemonic: {assembly}")
@@ -163,13 +165,25 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
             wanted_op = "BRANCHIND" if expected == "COMPUTED_JUMP" else "CALLIND"
             correct = observed == expected and wanted_op in pcode.split(",")
             xfail = PROPERTY_XFAILS.get("zero_link_flow") if expected == "COMPUTED_JUMP" else None
-        else:
+        elif kind == "relocated_flow":
             source_address, _, wanted_flow, source_target, wanted_op = expected
             wanted_target = ("" if source_target == "-" else
                              f"{address + int(source_target, 16) - source_address:08x}")
             observed = (flow_type, fields[3], pcode)
             correct = (flow_type == wanted_flow and fields[3] == wanted_target
                        and wanted_op in pcode.split(","))
+            xfail = None
+        else:
+            original_address = instruction_addresses[expected]
+            original = actual[original_address]
+            old_flows = original[3].split(",") if original[3] else []
+            wanted_flows = ",".join(
+                f"{int(flow, 16) + address - original_address:08x}"
+                for flow in old_flows)
+            observed = fields
+            correct = (fields[0] == original[0] and flow_type == original[2]
+                       and fields[3] == wanted_flows and pcode == original[4]
+                       and fields[5] == original[5])
             xfail = None
         if xfail:
             expected_property_failures += 1
