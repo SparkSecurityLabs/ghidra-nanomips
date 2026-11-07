@@ -31,7 +31,7 @@ for filename in ("nanomips.sinc", "nanomips_mt.sinc"):
         match = re.match(r"^:([A-Z][A-Z0-9.]*)\b", line)
         if match:
             source.append((f"{filename}:{line_number}", match.group(1)))
-if [(row["constructor"], row["mnemonic"]) for row in CASES] != source:
+if [row["mnemonic"] for row in CASES] != [mnemonic for _, mnemonic in source]:
     raise SystemExit("instruction cases do not match the SLEIGH constructor inventory")
 
 
@@ -91,7 +91,7 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
     flow_opcode = {"CONDITIONAL_JUMP": "CBRANCH", "UNCONDITIONAL_JUMP": "BRANCH",
                    "UNCONDITIONAL_CALL": "CALL", "COMPUTED_JUMP": "BRANCHIND",
                    "COMPUTED_CALL": "CALLIND"}
-    for address, row in zip(instruction_addresses, CASES):
+    for address, row, (source_id, _) in zip(instruction_addresses, CASES, source):
         fields = actual.get(address, [])
         encoded = bytes.fromhex(row["bytes"])
         if len(fields) != 6:
@@ -99,7 +99,7 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
             continue
         length, assembly, flow_type, flows, pcode, constructor = fields
         if (int(length) != len(encoded) or assembly.split()[0] != row["mnemonic"]
-                or flow_type != row["flow"] or constructor != row["constructor"]
+                or flow_type != row["flow"] or constructor != source_id
                 or (not pcode and row["mnemonic"] != "NOP")
                 or (row["flow"] in flow_opcode and flow_opcode[row["flow"]] not in pcode.split(","))
                 or (row["flow"] == "TERMINATOR" and row["mnemonic"] in {"JRC", "RESTORE.JRC"}

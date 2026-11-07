@@ -17,7 +17,11 @@ The runner builds this checkout and compiles its SLEIGH language in an isolated
 extension directory. `instruction_cases.tsv` has one byte vector for each of
 the 253 top-level SLEIGH instruction constructors. The test checks the exact
 constructor, size, mnemonic, and flow type; a source inventory check catches
-new or moved constructors. The 201 sampled vectors come from observed
+added, removed, or reordered forms. The `constructor` IDs in the TSV files are
+stable locators from the original fixture snapshot; the runner compares each
+decoded instruction with the current source line at the same constructor
+position, so source edits may change line numbers without changing case IDs.
+The 201 sampled vectors come from observed
 firmware instructions; the other 52 were assembled from the SLEIGH grammar
 and checked against the intended constructor. `flow_cases.tsv` adds six
 target and p-code checks for direct branches and a return. It also checks the
