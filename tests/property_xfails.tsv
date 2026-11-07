@@ -1,0 +1,3 @@
+property	issue	current
+extw_shift	NMI-02	31
+zero_link_flow	NMI-06	COMPUTED_CALL

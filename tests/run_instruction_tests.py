@@ -9,6 +9,7 @@ import re
 import subprocess
 import tempfile
 import zipfile
+from spec_properties import cases as property_cases, relocated_flows
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -27,6 +28,10 @@ with (ROOT / "tests/sequence_cases.tsv").open() as handle:
     SEQUENCE_CASES = list(csv.DictReader(handle, delimiter="\t"))
 with (ROOT / "tests/known_issues.tsv").open() as handle:
     KNOWN_ISSUES = list(csv.DictReader(handle, delimiter="\t"))
+with (ROOT / "tests/property_xfails.tsv").open() as handle:
+    PROPERTY_XFAILS = {row["property"]: row for row in csv.DictReader(handle, delimiter="\t")}
+PROPERTY_CASES = property_cases() + relocated_flows(FLOW_CASES)
+STRICT_PROPERTIES = os.environ.get("NANOMIPS_STRICT_PROPERTIES") == "1"
 source = []
 for filename in ("nanomips.sinc", "nanomips_mt.sinc"):
     for line_number, line in enumerate((ROOT / "data/languages" / filename).read_text().splitlines(), 1):
@@ -70,6 +75,9 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
     vectors += [(address, encoded) for address, encoded, *_ in FLOW_CASES]
     vectors += [(int(row["constructor"], 0), bytes.fromhex(row["bytes"]))
                 for row in SEQUENCE_CASES]
+    property_addresses = [0x6000 + 8*i for i in range(len(PROPERTY_CASES))]
+    vectors += [(address, encoded) for address, (_, encoded, _, _) in
+                zip(property_addresses, PROPERTY_CASES)]
     first = min(address for address, _ in vectors)
     last = max(0x4100, *(address + len(encoded) for address, encoded in vectors))
     image = bytearray(last - first)
@@ -129,6 +137,48 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
                 or flow_type != flow or flows != wanted_target
                 or op not in pcode.split(",")):
             failures.append(f"{address:#x}: {fields}")
+    expected_property_failures = 0
+    for address, (name, encoded, kind, expected) in zip(property_addresses, PROPERTY_CASES):
+        fields = actual.get(address, [])
+        if len(fields) != 6 or int(fields[0]) != len(encoded):
+            failures.append(f"{name}: missing or wrong-sized decode: {fields}")
+            continue
+        _, assembly, flow_type, _, pcode, _ = fields
+        mnemonic = ("EXTW" if kind == "last_operand" else
+                    expected[1] if kind == "relocated_flow" else
+                    "JALRC.HB" if "_hb_" in name else "JALRC")
+        if assembly.split()[0] != mnemonic:
+            failures.append(f"{name}: wrong mnemonic: {assembly}")
+            continue
+        if kind == "last_operand":
+            try:
+                observed = int(assembly.rsplit(",", 1)[1], 0)
+            except (IndexError, ValueError):
+                failures.append(f"{name}: missing numeric operand: {assembly}")
+                continue
+            correct = observed == expected
+            xfail = PROPERTY_XFAILS.get("extw_shift") if expected != 31 else None
+        elif kind == "link_flow":
+            observed = flow_type
+            wanted_op = "BRANCHIND" if expected == "COMPUTED_JUMP" else "CALLIND"
+            correct = observed == expected and wanted_op in pcode.split(",")
+            xfail = PROPERTY_XFAILS.get("zero_link_flow") if expected == "COMPUTED_JUMP" else None
+        else:
+            source_address, _, wanted_flow, source_target, wanted_op = expected
+            wanted_target = ("" if source_target == "-" else
+                             f"{address + int(source_target, 16) - source_address:08x}")
+            observed = (flow_type, fields[3], pcode)
+            correct = (flow_type == wanted_flow and fields[3] == wanted_target
+                       and wanted_op in pcode.split(","))
+            xfail = None
+        if xfail:
+            expected_property_failures += 1
+            if STRICT_PROPERTIES and not correct:
+                failures.append(f"{name}: expected {expected}, got {fields} ({xfail['issue']})")
+            elif not STRICT_PROPERTIES and (correct or str(observed) != xfail["current"]):
+                failures.append(f"{name}: expected {xfail['issue']} mismatch, got {fields}")
+        elif not correct:
+            failures.append(f"{name}: expected {expected}, got {fields}")
     for issue in KNOWN_ISSUES:
         address = instruction_addresses[next(i for i, row in enumerate(CASES)
                                              if row["constructor"] == issue["constructor"])]
@@ -177,6 +227,7 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
         print("FAIL", failure)
     print(f"{len(CASES)} constructor cases, {len(FLOW_CASES)} flow cases, "
           f"{len(SEMANTIC_CASES)} semantic scenarios, {len(SEQUENCE_CASES)} sequences, "
+          f"{len(PROPERTY_CASES)} generated property cases ({expected_property_failures} expected failures), "
           f"{sum(row['status'] == 'xfail' for row in SEMANTIC_CASES)} expected value failures, "
           f"{len(KNOWN_ISSUES)} known structural failures checked; "
           f"{len(failures)} failures")

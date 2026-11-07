@@ -43,6 +43,17 @@ stores followed by loads.
 successful emulator step. An unexpected pass requires reviewing and removing
 the corresponding expected-failure entry.
 
+`spec_properties.py` generates deterministic ISA-based vectors for encoded
+`EXTW` shift values and zero/nonzero link registers in both 32-bit `JALRC`
+forms. It also relocates each fixed flow fixture three times and checks that
+PC-relative targets move with the instruction. The expected values come from
+the nanoMIPS32 ISA manual and the known-good flow fixtures, independently of
+the SLEIGH implementation. `property_xfails.tsv` names current defects; the
+normal test run requires their exact known-bad result and flags unexpected
+passes. To see the tests fail against those defects, run with
+`NANOMIPS_STRICT_PROPERTIES=1` in the environment. Remove an entry from
+`property_xfails.tsv` when its implementation is fixed.
+
 Run `python3 tests/coverage.py` for the per-constructor depth. In the current
 suite, 253 constructors have decoder checks, 190 have at least one passing
 state scenario, four have an expected failing state scenario, and 59 have only
