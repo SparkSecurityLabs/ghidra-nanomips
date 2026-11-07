@@ -10,7 +10,7 @@ import subprocess
 import tempfile
 import zipfile
 from spec_properties import (cases as property_cases, crc32_scenarios,
-                             rotx_scenarios,
+                             register_scenarios, rotate_scenarios, rotx_scenarios,
                              relocated_decodes, relocated_flows)
 
 
@@ -27,6 +27,7 @@ with (ROOT / "tests/instruction_cases.tsv").open() as handle:
 with (ROOT / "tests/semantic_cases.tsv").open() as handle:
     SEMANTIC_CASES = list(csv.DictReader(handle, delimiter="\t"))
 SEMANTIC_CASES += list(crc32_scenarios())
+SEMANTIC_CASES += list(register_scenarios())
 with (ROOT / "tests/sequence_cases.tsv").open() as handle:
     SEQUENCE_CASES = list(csv.DictReader(handle, delimiter="\t"))
 with (ROOT / "tests/known_issues.tsv").open() as handle:
@@ -37,6 +38,8 @@ PROPERTY_CASES = (property_cases() + relocated_flows(FLOW_CASES)
                   + relocated_decodes(CASES))
 ROTX_CASES = list(rotx_scenarios())
 ROTX_ADDRESSES = [0x8000 + 8*i for i in range(len(ROTX_CASES))]
+ROTATE_CASES = list(rotate_scenarios())
+ROTATE_ADDRESSES = [0x8100 + 8*i for i in range(len(ROTATE_CASES))]
 SEMANTIC_CASES += [
     {"case": f"rotx_{shift}_{shiftx}_{stripe}_{index}",
      "constructor": hex(address), "registers_in": f"t0={value:#x}",
@@ -45,6 +48,13 @@ SEMANTIC_CASES += [
      "current_registers": "-", "current_memory": "-"}
     for index, (address, (_, value, expected, (shift, shiftx, stripe)))
     in enumerate(zip(ROTX_ADDRESSES, ROTX_CASES))]
+SEMANTIC_CASES += [
+    {"case": f"{mnemonic.lower()}_{amount}_{index}", "constructor": hex(address),
+     "registers_in": registers_in, "registers_out": registers_out, "pc": "next",
+     "memory_in": "-", "memory_out": "-", "status": "pass",
+     "current_registers": "-", "current_memory": "-"}
+    for index, (address, (_, mnemonic, registers_in, registers_out, amount))
+    in enumerate(zip(ROTATE_ADDRESSES, ROTATE_CASES))]
 STRICT_PROPERTIES = os.environ.get("NANOMIPS_STRICT_PROPERTIES") == "1"
 source = []
 for filename in ("nanomips.sinc", "nanomips_mt.sinc"):
@@ -94,6 +104,8 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
                 zip(property_addresses, PROPERTY_CASES)]
     vectors += [(address, encoded) for address, (encoded, _, _, _) in
                 zip(ROTX_ADDRESSES, ROTX_CASES)]
+    vectors += [(address, encoded) for address, (encoded, _, _, _, _) in
+                zip(ROTATE_ADDRESSES, ROTATE_CASES)]
     first = min(address for address, _ in vectors)
     last = max(0x4100, *(address + len(encoded) for address, encoded in vectors))
     image = bytearray(last - first)
@@ -218,6 +230,10 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
         fields = actual.get(address, [])
         if len(fields) != 6 or fields[1].split()[0] != "ROTX":
             failures.append(f"{address:#x}: missing ROTX decode: {fields}")
+    for address, (_, mnemonic, _, _, _) in zip(ROTATE_ADDRESSES, ROTATE_CASES):
+        fields = actual.get(address, [])
+        if len(fields) != 6 or fields[1].split()[0] != mnemonic:
+            failures.append(f"{address:#x}: missing {mnemonic} decode: {fields}")
     for issue in KNOWN_ISSUES:
         address = instruction_addresses[next(i for i, row in enumerate(CASES)
                                              if row["constructor"] == issue["constructor"])]

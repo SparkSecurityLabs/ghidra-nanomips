@@ -80,8 +80,24 @@ def crc32_scenarios():
             }
 
 
-def rotx_scenarios():
+def rotx_reference(value, shift, shiftx, stripe):
     """ROTX bit network from nanoMIPS32 ISA manual, revision 01.01, page 160."""
+    previous = value | (value << 32)
+    for distance, limit, selector in ((16, 47, 8), (8, 39, 4),
+                                      (4, 35, 2), (2, 33, 1), (1, 32, 0)):
+        result = previous
+        for bit in range(limit):
+            selected = (shift if selector == 0 or bit & selector else shiftx)
+            if distance == 16 and stripe and not bit & 4:
+                selected = ~selected
+            if selected & distance:
+                source = (previous >> (bit + distance)) & 1
+                result = (result & ~(1 << bit)) | (source << bit)
+        previous = result
+    return previous & 0xffffffff
+
+
+def rotx_scenarios():
     parameters = ((0, 0, 0), (1, 8, 0), (4, 12, 1), (28, 4, 0),
                   (17, 10, 0), (31, 30, 1), (5, 6, 1))
     inputs = (0x01234567, 0x89abcdef)
@@ -90,16 +106,47 @@ def rotx_scenarios():
                 | ((shiftx // 2) << 7) | (stripe << 6) | shift)
         encoded = word_bytes(word)
         for value in inputs:
-            previous = value | (value << 32)
-            for distance, limit, selector in ((16, 47, 8), (8, 39, 4),
-                                              (4, 35, 2), (2, 33, 1), (1, 32, 0)):
-                result = previous
-                for bit in range(limit):
-                    selected = (shift if selector == 0 or bit & selector else shiftx)
-                    if distance == 16 and stripe and not bit & 4:
-                        selected = ~selected
-                    if selected & distance:
-                        source = (previous >> (bit + distance)) & 1
-                        result = (result & ~(1 << bit)) | (source << bit)
-                previous = result
-            yield encoded, value, previous & 0xffffffff, (shift, shiftx, stripe)
+            yield encoded, value, rotx_reference(value, shift, shiftx, stripe), (shift, shiftx, stripe)
+
+
+def rotate_reference(value, amount):
+    amount &= 31
+    return ((value >> amount) | (value << (32 - amount))) & 0xffffffff
+
+
+def rotate_scenarios():
+    # Instruction fields from the ISA manual; fixed registers match the fixtures.
+    immediate = (0b100000 << 26) | (5 << 21) | (5 << 16) | (0b1100 << 12) | (0b0110 << 5) | 1
+    variable = (0b001000 << 26) | (20 << 16) | (25 << 11) | (0b0011010 << 3)
+    for amount in (0, 1, 7, 16, 31):
+        encoded = word_bytes((immediate & ~31) | amount)
+        for value in (0x01234567, 0x80000001):
+            yield encoded, "ROTR", f"a1={value:#x}", f"a1={rotate_reference(value, amount):#x}", amount
+    encoded = word_bytes((variable & ~(31 << 21)) | (5 << 21))
+    for amount in (0, 1, 31, 32, 33, 0xffffffff):
+        for value in (0x01234567, 0x80000001):
+            yield encoded, "ROTRV", f"s4={value:#x};a1={amount:#x}", f"t9={rotate_reference(value, amount):#x}", amount
+
+
+def register_scenarios():
+    cases = (("sov_pos_overflow", "nanomips.sinc:3381", "a1=0x7fffffff;a2=1", "a0=1"),
+             ("sov_neg_overflow", "nanomips.sinc:3381", "a1=0x80000000;a2=0xffffffff", "a0=1"),
+             ("sov_no_overflow", "nanomips.sinc:3381", "a1=1;a2=2", "a0=0"),
+             ("sov_opposite_signs", "nanomips.sinc:3381", "a1=0x80000000;a2=0x7fffffff", "a0=0"))
+    for name, constructor, registers_in, registers_out in cases:
+        yield {"case": name, "constructor": constructor,
+               "registers_in": registers_in, "registers_out": registers_out,
+               "pc": "next", "memory_in": "-", "memory_out": "-",
+               "status": "pass", "current_registers": "-", "current_memory": "-"}
+    aliases = (("BITREVB", "nanomips.sinc:1107", "a1", "a0", 7, 8, 1),
+               ("BITREVH", "nanomips.sinc:1134", "a1", "a0", 15, 16, 0),
+               ("BITREVW", "nanomips.sinc:1157", "s3", "a1", 31, 0, 0),
+               ("BYTEREVH", "nanomips.sinc:1280", "a1", "a0", 8, 24, 0),
+               ("BYTEREVW", "nanomips.sinc:1290", "a1", "a1", 24, 8, 0))
+    for mnemonic, constructor, source, destination, shift, shiftx, stripe in aliases:
+        for index, value in enumerate((0x01234567, 0x89abcdef)):
+            yield {"case": f"{mnemonic.lower()}_reference_{index}",
+                   "constructor": constructor, "registers_in": f"{source}={value:#x}",
+                   "registers_out": f"{destination}={rotx_reference(value, shift, shiftx, stripe):#x}",
+                   "pc": "next", "memory_in": "-", "memory_out": "-",
+                   "status": "pass", "current_registers": "-", "current_memory": "-"}
