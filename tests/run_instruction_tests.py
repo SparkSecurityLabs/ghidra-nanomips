@@ -53,6 +53,9 @@ SIGRIE_CASES = list(sigrie_scenarios())
 SIGRIE_ADDRESSES = [0x9300 + 8*i for i in range(len(SIGRIE_CASES))]
 UALWM_CASES = [(0x9400, bytes.fromhex("04a60425"), 0x6000, 4, 2),
                (0x9408, bytes.fromhex("04a6fc85"), 0x9003, -4, 8)]
+RESTORE_GP_CASES = [(0x9500, bytes.fromhex("63834630"), 3, False),
+                    (0x9508, bytes.fromhex("ef834630"), 15, False),
+                    (0x9510, bytes.fromhex("63834730"), 3, True)]
 SEMANTIC_CASES += [
     {"case": f"rotx_{shift}_{shiftx}_{stripe}_{index}",
      "constructor": hex(address), "registers_in": f"t0={value:#x}",
@@ -106,6 +109,17 @@ SEMANTIC_CASES += [
      "memory_out": "-", "status": "pass", "current_registers": "-",
      "current_memory": "-"}
     for address, _, base, offset, count in UALWM_CASES]
+SEMANTIC_CASES += [
+    {"case": f"restore_gp_last_{address:x}", "constructor": hex(address),
+     "registers_in": "sp=0x6000;ra=0x7000",
+     "registers_out": f"gp={0x11110000+count-1:#x};sp=0x6040",
+     "pc": "0x7000" if returns else "next",
+     "memory_in": ";".join(
+         f"{0x603c-4*i:#x}:{(0x11110000+i).to_bytes(4, 'little').hex()}"
+         for i in range(count)),
+     "memory_out": "-", "status": "pass", "current_registers": "-",
+     "current_memory": "-"}
+    for address, _, count, returns in RESTORE_GP_CASES]
 STRICT_PROPERTIES = os.environ.get("NANOMIPS_STRICT_PROPERTIES") == "1"
 source = []
 for filename in ("nanomips.sinc", "nanomips_mt.sinc"):
@@ -166,6 +180,7 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
     vectors += [(address, encoded) for address, (_, encoded) in
                 zip(SIGRIE_ADDRESSES, SIGRIE_CASES)]
     vectors += [(address, encoded) for address, encoded, _, _, _ in UALWM_CASES]
+    vectors += [(address, encoded) for address, encoded, _, _ in RESTORE_GP_CASES]
     first = min(address for address, _ in vectors)
     last = max(0x4100, *(address + len(encoded) for address, encoded in vectors))
     image = bytearray(last - first)

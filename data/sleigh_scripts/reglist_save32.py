@@ -56,7 +56,12 @@ def main():
             else:
                 pattern = 'rt_raw ...'
 
-            print(f'{name}: {reg},{next_name}\tis {pattern} & {next_name} & {reg}\t\t\t\t{{{sp_write}}}')
+            if args.restore and i in (28, 44):
+                # Read the earlier gp slot before restoring the final gp substitute.
+                print(f'{name}: {reg},{next_name}\tis (rt_raw; lo_uimm12_sl3 & gp_end = 1) & {next_name} & {reg}\t\t\t\t{{local ignored_gp:4 = *:4 (load_multiple_base + lo_uimm12_sl3 - $(REGSIZE)*({i+1}-rt_raw)); build {next_name};}}')
+                print(f'{name}: {reg},{next_name}\tis (rt_raw; lo_uimm12_sl3 & gp_end = 0) & {next_name} & {reg}\t\t\t\t{{{sp_write}}}')
+            else:
+                print(f'{name}: {reg},{next_name}\tis {pattern} & {next_name} & {reg}\t\t\t\t{{{sp_write}}}')
 
     # empty register list case for count = 0
     print(f'{base_name}: \t\t\tis count = 0 {{}}')

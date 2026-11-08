@@ -2615,7 +2615,8 @@ reglist_rs32_45: gp					is count = 46 - rt_raw & rt_raw & gp; gp_end = 1 & lo_ui
 reglist_rs32_45: sp					is count = 46 - rt_raw & rt_raw & sp; gp_end = 0 & lo_uimm12_sl3	{sp = *:$(REGSIZE) (load_multiple_base + lo_uimm12_sl3 - $(REGSIZE)*(46-rt_raw));}
 reglist_rs32_44: gp					is count = 45 - rt_raw & rt_raw & gp; gp_end = 1 & lo_uimm12_sl3	{gp = *:$(REGSIZE) (load_multiple_base + lo_uimm12_sl3 - $(REGSIZE)*(45-rt_raw));}
 reglist_rs32_44: gp					is count = 45 - rt_raw & rt_raw & gp; gp_end = 0 & lo_uimm12_sl3	{gp = *:$(REGSIZE) (load_multiple_base + lo_uimm12_sl3 - $(REGSIZE)*(45-rt_raw));}
-reglist_rs32_44: gp,reglist_rs32_45	is (rt_raw; lo_uimm12_sl3) & reglist_rs32_45 & gp				{gp = *:$(REGSIZE) (load_multiple_base + lo_uimm12_sl3 - $(REGSIZE)*(45-rt_raw));}
+reglist_rs32_44: gp,reglist_rs32_45	is (rt_raw; lo_uimm12_sl3 & gp_end = 1) & reglist_rs32_45 & gp				{local ignored_gp:4 = *:4 (load_multiple_base + lo_uimm12_sl3 - $(REGSIZE)*(45-rt_raw)); build reglist_rs32_45;}
+reglist_rs32_44: gp,reglist_rs32_45	is (rt_raw; lo_uimm12_sl3 & gp_end = 0) & reglist_rs32_45 & gp				{gp = *:$(REGSIZE) (load_multiple_base + lo_uimm12_sl3 - $(REGSIZE)*(45-rt_raw));}
 reglist_rs32_43: gp					is count = 44 - rt_raw & rt_raw & gp; gp_end = 1 & lo_uimm12_sl3	{gp = *:$(REGSIZE) (load_multiple_base + lo_uimm12_sl3 - $(REGSIZE)*(44-rt_raw));}
 reglist_rs32_43: k1					is count = 44 - rt_raw & rt_raw & k1; gp_end = 0 & lo_uimm12_sl3	{k1 = *:$(REGSIZE) (load_multiple_base + lo_uimm12_sl3 - $(REGSIZE)*(44-rt_raw));}
 reglist_rs32_43: k1,reglist_rs32_44	is (rt_raw; lo_uimm12_sl3) & reglist_rs32_44 & k1				{k1 = *:$(REGSIZE) (load_multiple_base + lo_uimm12_sl3 - $(REGSIZE)*(44-rt_raw));}
@@ -2663,7 +2664,8 @@ reglist_rs32_29: sp					is count = 30 - rt_raw & rt_raw & sp; gp_end = 0 & lo_ui
 reglist_rs32_29: sp,reglist_rs32_30	is (rt_raw; lo_uimm12_sl3) & reglist_rs32_30 & sp				{sp = *:$(REGSIZE) (load_multiple_base + lo_uimm12_sl3 - $(REGSIZE)*(30-rt_raw));}
 reglist_rs32_28: gp					is count = 29 - rt_raw & rt_raw & gp; gp_end = 1 & lo_uimm12_sl3	{gp = *:$(REGSIZE) (load_multiple_base + lo_uimm12_sl3 - $(REGSIZE)*(29-rt_raw));}
 reglist_rs32_28: gp					is count = 29 - rt_raw & rt_raw & gp; gp_end = 0 & lo_uimm12_sl3	{gp = *:$(REGSIZE) (load_multiple_base + lo_uimm12_sl3 - $(REGSIZE)*(29-rt_raw));}
-reglist_rs32_28: gp,reglist_rs32_29	is (rt_raw; lo_uimm12_sl3) & reglist_rs32_29 & gp				{gp = *:$(REGSIZE) (load_multiple_base + lo_uimm12_sl3 - $(REGSIZE)*(29-rt_raw));}
+reglist_rs32_28: gp,reglist_rs32_29	is (rt_raw; lo_uimm12_sl3 & gp_end = 1) & reglist_rs32_29 & gp				{local ignored_gp:4 = *:4 (load_multiple_base + lo_uimm12_sl3 - $(REGSIZE)*(29-rt_raw)); build reglist_rs32_29;}
+reglist_rs32_28: gp,reglist_rs32_29	is (rt_raw; lo_uimm12_sl3 & gp_end = 0) & reglist_rs32_29 & gp				{gp = *:$(REGSIZE) (load_multiple_base + lo_uimm12_sl3 - $(REGSIZE)*(29-rt_raw));}
 reglist_rs32_27: gp					is count = 28 - rt_raw & rt_raw & gp; gp_end = 1 & lo_uimm12_sl3	{gp = *:$(REGSIZE) (load_multiple_base + lo_uimm12_sl3 - $(REGSIZE)*(28-rt_raw));}
 reglist_rs32_27: k1					is count = 28 - rt_raw & rt_raw & k1; gp_end = 0 & lo_uimm12_sl3	{k1 = *:$(REGSIZE) (load_multiple_base + lo_uimm12_sl3 - $(REGSIZE)*(28-rt_raw));}
 reglist_rs32_27: k1,reglist_rs32_28	is (rt_raw; lo_uimm12_sl3) & reglist_rs32_28 & k1				{k1 = *:$(REGSIZE) (load_multiple_base + lo_uimm12_sl3 - $(REGSIZE)*(28-rt_raw));}
