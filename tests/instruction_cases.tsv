@@ -23,7 +23,9 @@ nanomips.sinc:964	BALC	002a0009	UNCONDITIONAL_CALL	sampled
 nanomips.sinc:972	BALC	ff3a	UNCONDITIONAL_CALL	sampled
 nanomips.sinc:981	BALRSC	a7488088	COMPUTED_CALL	sampled
 nanomips.sinc:991	BBEQZC	a4c8fb7f	CONDITIONAL_JUMP	sampled
+nanomips.sinc:1008	BBEQZC	85c80400	TERMINATOR	reserved bit 32
 nanomips.sinc:1004	BBNEZC	b4c8fb77	CONDITIONAL_JUMP	sampled
+nanomips.sinc:1032	BBNEZC	95c804f8	TERMINATOR	reserved bit 63
 nanomips.sinc:1018	BC	00289a14	UNCONDITIONAL_JUMP	sampled
 nanomips.sinc:1025	BC	6419	UNCONDITIONAL_JUMP	sampled
 nanomips.sinc:1034	BEQC	a488ef3f	CONDITIONAL_JUMP	sampled
