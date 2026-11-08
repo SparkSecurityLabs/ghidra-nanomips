@@ -42,6 +42,15 @@ public class ProbeSemantics extends GhidraScript {
         @Override public boolean pcodeCallback(PcodeOpRaw op) { return true; }
     }
 
+    private static class SignalReference extends BreakCallBack {
+        long code = -1;
+
+        @Override public boolean pcodeCallback(PcodeOpRaw op) {
+            code = emulate.getMemoryState().getValue(op.getInput(1));
+            return true;
+        }
+    }
+
     @Override public void run() throws Exception {
         String[] args = getScriptArgs();
         Map<String,Address> addresses = new HashMap<>();
@@ -68,6 +77,8 @@ public class ProbeSemantics extends GhidraScript {
             Barrier barrier = new Barrier();
             emulator.registerCallOtherCallback("clear_instruction_hazards", barrier);
             emulator.registerCallOtherCallback("clear_execution_hazards", barrier);
+            SignalReference signal = new SignalReference();
+            emulator.registerCallOtherCallback("sigrie", signal);
             try {
                 emulator.writeRegister(emulator.getPCRegister(), address.getOffset());
                 if (!fields[2].equals("-")) {
@@ -107,7 +118,8 @@ public class ProbeSemantics extends GhidraScript {
                 output.add(fields[0] + "\t" + ok + "\t"
                     + emulator.readRegister(emulator.getPCRegister()).toString(16) + "\t"
                     + registers + "\t" + memory + "\t"
-                    + (debugBreak.seen ? "debug_break" : overflow.seen ? "overflow" : trap.seen ? "trap" :
+                    + (signal.code >= 0 ? "sigrie:" + Long.toHexString(signal.code) :
+                       debugBreak.seen ? "debug_break" : overflow.seen ? "overflow" : trap.seen ? "trap" :
                        String.valueOf(emulator.getLastError()).replace('\t', ' ')));
             } catch (Exception e) {
                 output.add(fields[0] + "\tfalse\t\t\t\t" + e.toString().replace('\t', ' '));

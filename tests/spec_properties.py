@@ -36,6 +36,14 @@ def jalrc_overlap_scenarios():
     yield "jalrc_overlap_ra_16", halfword.to_bytes(2, "little"), "ra"
 
 
+def sigrie_scenarios():
+    """Exercise the full 19-bit code field at both halves and boundaries."""
+    for code in (0, 1, 0x7fff, 0x8000, 0xffff, 0x10000, 0x40000, 0x7ffff):
+        encoded = (code >> 16).to_bytes(2, "little")
+        encoded += (code & 0xffff).to_bytes(2, "little")
+        yield code, encoded
+
+
 def cases():
     result = []
     for shift in (0, 1, 7, 8, 15, 16, 23, 24, 30, 31):

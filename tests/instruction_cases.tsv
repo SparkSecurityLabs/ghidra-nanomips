@@ -191,7 +191,7 @@ nanomips.sinc:3267	SH	f0a6f4a8	FALL_THROUGH	sampled
 nanomips.sinc:3277	SHE	85a4002a	FALL_THROUGH	assembled
 nanomips.sinc:3288	SHX	65228732	FALL_THROUGH	sampled
 nanomips.sinc:3297	SHXS	a420c7a2	FALL_THROUGH	sampled
-nanomips.sinc:3306	SIGRIE	00000000	FALL_THROUGH	sampled
+nanomips.sinc:3306	SIGRIE	00000000	TERMINATOR	sampled
 nanomips.sinc:3320	SLL	84800cc0	FALL_THROUGH	sampled
 nanomips.sinc:3328	SLL	1032	FALL_THROUGH	sampled
 nanomips.sinc:3336	SLLV	04221028	FALL_THROUGH	sampled

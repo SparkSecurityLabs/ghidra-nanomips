@@ -39,6 +39,8 @@ and direct and indexed loads and stores. Rows marked `xfail` assert a specific
 ISA mismatch while the relevant issue is open.
 The `TEQ`/`TNE` cases check both predicate outcomes using a trap callback;
 they do not model exception entry.
+The `SIGRIE` cases check the 19-bit code and non-fallthrough marker without
+modeling reserved-instruction exception entry.
 `sequence_cases.tsv` runs eight two-instruction paths that cover calls and
 returns, both outcomes of a branch, stack save/restore, and multi-register
 stores followed by loads.

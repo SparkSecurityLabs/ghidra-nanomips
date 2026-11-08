@@ -13,6 +13,7 @@ from spec_properties import (addiupc_scenarios, branch_offset_scenarios,
                              cases as property_cases, crc32_scenarios,
                              extw_scenarios, jalrc_overlap_scenarios,
                              register_scenarios, rotate_scenarios, rotx_scenarios,
+                             sigrie_scenarios,
                              relocated_decodes, relocated_flows)
 
 
@@ -48,6 +49,8 @@ EXTW_STATE_CASES = list(extw_scenarios())
 EXTW_STATE_ADDRESSES = [0x9100 + 8*i for i in range(len(EXTW_STATE_CASES))]
 JALRC_OVERLAP_CASES = list(jalrc_overlap_scenarios())
 JALRC_OVERLAP_ADDRESSES = [0x9200 + 8*i for i in range(len(JALRC_OVERLAP_CASES))]
+SIGRIE_CASES = list(sigrie_scenarios())
+SIGRIE_ADDRESSES = [0x9300 + 8*i for i in range(len(SIGRIE_CASES))]
 SEMANTIC_CASES += [
     {"case": f"rotx_{shift}_{shiftx}_{stripe}_{index}",
      "constructor": hex(address), "registers_in": f"t0={value:#x}",
@@ -85,6 +88,12 @@ SEMANTIC_CASES += [
      "current_registers": "-", "current_memory": "-"}
     for address, (name, encoded, register)
     in zip(JALRC_OVERLAP_ADDRESSES, JALRC_OVERLAP_CASES)]
+SEMANTIC_CASES += [
+    {"case": f"sigrie_{code:x}", "constructor": hex(address),
+     "registers_in": "-", "registers_out": "-", "pc": "self",
+     "memory_in": "-", "memory_out": "-", "status": f"sigrie:{code:x}",
+     "current_registers": "-", "current_memory": "-"}
+    for address, (code, _) in zip(SIGRIE_ADDRESSES, SIGRIE_CASES)]
 STRICT_PROPERTIES = os.environ.get("NANOMIPS_STRICT_PROPERTIES") == "1"
 source = []
 for filename in ("nanomips.sinc", "nanomips_mt.sinc"):
@@ -142,6 +151,8 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
                 zip(EXTW_STATE_ADDRESSES, EXTW_STATE_CASES)]
     vectors += [(address, encoded) for address, (_, encoded, _) in
                 zip(JALRC_OVERLAP_ADDRESSES, JALRC_OVERLAP_CASES)]
+    vectors += [(address, encoded) for address, (_, encoded) in
+                zip(SIGRIE_ADDRESSES, SIGRIE_CASES)]
     first = min(address for address, _ in vectors)
     last = max(0x4100, *(address + len(encoded) for address, encoded in vectors))
     image = bytearray(last - first)
@@ -293,6 +304,11 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
         mnemonic = "JALRC.HB" if name.endswith("_1") else "JALRC"
         if len(fields) != 6 or fields[1].split()[0] != mnemonic:
             failures.append(f"{name}: missing JALRC decode: {fields}")
+    for address in SIGRIE_ADDRESSES:
+        fields = actual.get(address, [])
+        if (len(fields) != 6 or fields[1].split()[0] != "SIGRIE"
+                or fields[2] != "TERMINATOR" or "BRANCH" not in fields[4].split(",")):
+            failures.append(f"{address:#x}: missing SIGRIE termination: {fields}")
     for issue in KNOWN_ISSUES:
         address = instruction_addresses[next(i for i, row in enumerate(CASES)
                                              if row["constructor"] == issue["constructor"])]
@@ -337,6 +353,8 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
             failures.append(f"{expected['case']}: expected overflow, got {result}")
         if expected["status"] == "debug_break" and (not observed or result["error"] != "debug_break"):
             failures.append(f"{expected['case']}: expected debug break, got {result}")
+        if expected["status"].startswith("sigrie:") and (not observed or result["error"] != expected["status"]):
+            failures.append(f"{expected['case']}: expected SIGRIE, got {result}")
         if expected["status"] == "xfail":
             current_regs = {name: int(value, 0) & 0xffffffff for name, value in
                             (entry.split("=", 1) for entry in expected["current_registers"].split(";"))}
