@@ -2173,8 +2173,8 @@ reglist_lwm_02: is (rt_raw ...) & (count3_mapped = 3 - rt_raw2 ...)	{t4 = sext(*
 reglist_lwm_02: is (rt_raw ...) & reglist_lwm_03				{t4 = sext(*:4 (load_multiple_base + $(REGSIZE)*(2-rt_raw)));}
 reglist_lwm_01: is (rt_raw ...) & (count3_mapped = 2 - rt_raw2 ...)	{at = sext(*:4 (load_multiple_base + $(REGSIZE)*(1-rt_raw)));}
 reglist_lwm_01: is (rt_raw ...) & reglist_lwm_02				{at = sext(*:4 (load_multiple_base + $(REGSIZE)*(1-rt_raw)));}
-reglist_lwm_00: is (rt_raw ...) & (count3_mapped = 1 - rt_raw2 ...)	{}
-reglist_lwm_00: is (rt_raw ...) & reglist_lwm_01				{}
+reglist_lwm_00: is (rt_raw ...) & (count3_mapped = 1 - rt_raw2 ...)	{local ignored_zero:4 = *:4 load_multiple_base;}
+reglist_lwm_00: is (rt_raw ...) & reglist_lwm_01				{local ignored_zero:4 = *:4 load_multiple_base; build reglist_lwm_01;}
 reglist_lwm: is (rt_raw = 31 ...) & reglist_lwm_31 {}
 reglist_lwm: is (rt_raw = 30 ...) & reglist_lwm_30 {}
 reglist_lwm: is (rt_raw = 29 ...) & reglist_lwm_29 {}
