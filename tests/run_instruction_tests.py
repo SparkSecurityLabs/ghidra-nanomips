@@ -59,6 +59,14 @@ RESTORE_GP_CASES = [(0x9500, bytes.fromhex("63834630"), 3, False),
 LWM_ZERO_CASES = [(0x9520, bytes.fromhex("1fa40014"), 1),
                   (0x9528, bytes.fromhex("1fa40004"), 8),
                   (0x9530, bytes.fromhex("3fa40004"), 8)]
+LLWP_CASES = [(0x9540, bytes.fromhex("84a42951"), "llwp_base_overlap",
+               "a0=0xa000;a1=0xb000"),
+              (0x9548, bytes.fromhex("84a42952"), "llwpe_base_overlap",
+               "a0=0xa000;a1=0xb000"),
+              (0x9550, bytes.fromhex("a4a43151"), "llwp_control",
+               "a1=0xa000;a2=0xb000"),
+              (0x9558, bytes.fromhex("a4a42152"), "llwpe_second_overlap",
+               "a1=0xa000;a0=0xb000")]
 SEMANTIC_CASES += [
     {"case": f"rotx_{shift}_{shiftx}_{stripe}_{index}",
      "constructor": hex(address), "registers_in": f"t0={value:#x}",
@@ -123,6 +131,13 @@ SEMANTIC_CASES += [
      "memory_out": "-", "status": "pass", "current_registers": "-",
      "current_memory": "-"}
     for address, _, count, returns in RESTORE_GP_CASES]
+SEMANTIC_CASES += [
+    {"case": name, "constructor": hex(address), "registers_in": "a0=0x6000",
+     "registers_out": registers_out, "pc": "next",
+     "memory_in": "0x6000:00a0000000b00000;0xa004:00c00000",
+     "memory_out": "-", "status": "pass", "current_registers": "-",
+     "current_memory": "-"}
+    for address, _, name, registers_out in LLWP_CASES]
 STRICT_PROPERTIES = os.environ.get("NANOMIPS_STRICT_PROPERTIES") == "1"
 source = []
 for filename in ("nanomips.sinc", "nanomips_mt.sinc"):
@@ -185,6 +200,7 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
     vectors += [(address, encoded) for address, encoded, _, _, _ in UALWM_CASES]
     vectors += [(address, encoded) for address, encoded, _, _ in RESTORE_GP_CASES]
     vectors += [(address, encoded) for address, encoded, _ in LWM_ZERO_CASES]
+    vectors += [(address, encoded) for address, encoded, _, _ in LLWP_CASES]
     first = min(address for address, _ in vectors)
     last = max(0x4100, *(address + len(encoded) for address, encoded in vectors))
     image = bytearray(last - first)
