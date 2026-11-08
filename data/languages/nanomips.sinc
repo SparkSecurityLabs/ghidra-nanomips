@@ -3856,6 +3856,8 @@ stype_implicit_zero: hi_uimm0_5 is hi_uimm0_5 {}
 	count3 & lo_pool11_1 = 0b0 & lo_pool10_1 = 0b1 & lo_pool8_2 = 0b01)
 	& lo_rs_soffset9 & reglist_lwm_pre
 	{
+		build lo_rs_soffset9;
+		load_multiple_base = lo_rs_soffset9;
 		build reglist_lwm_pre;
 	}
 
