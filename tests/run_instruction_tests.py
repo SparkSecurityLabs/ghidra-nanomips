@@ -51,6 +51,8 @@ JALRC_OVERLAP_CASES = list(jalrc_overlap_scenarios())
 JALRC_OVERLAP_ADDRESSES = [0x9200 + 8*i for i in range(len(JALRC_OVERLAP_CASES))]
 SIGRIE_CASES = list(sigrie_scenarios())
 SIGRIE_ADDRESSES = [0x9300 + 8*i for i in range(len(SIGRIE_CASES))]
+UALWM_CASES = [(0x9400, bytes.fromhex("04a60425"), 0x6000, 4, 2),
+               (0x9408, bytes.fromhex("04a6fc85"), 0x9003, -4, 8)]
 SEMANTIC_CASES += [
     {"case": f"rotx_{shift}_{shiftx}_{stripe}_{index}",
      "constructor": hex(address), "registers_in": f"t0={value:#x}",
@@ -94,6 +96,16 @@ SEMANTIC_CASES += [
      "memory_in": "-", "memory_out": "-", "status": f"sigrie:{code:x}",
      "current_registers": "-", "current_memory": "-"}
     for address, (code, _) in zip(SIGRIE_ADDRESSES, SIGRIE_CASES)]
+SEMANTIC_CASES += [
+    {"case": f"ualwm_base_{address:x}", "constructor": hex(address),
+     "registers_in": f"a0={base:#x}",
+     "registers_out": ";".join(f"s{i}={0x11110000+i:#x}" for i in range(count)),
+     "pc": "next",
+     "memory_in": f"{base+offset:#x}:" +
+                  b"".join((0x11110000+i).to_bytes(4, "little") for i in range(count)).hex(),
+     "memory_out": "-", "status": "pass", "current_registers": "-",
+     "current_memory": "-"}
+    for address, _, base, offset, count in UALWM_CASES]
 STRICT_PROPERTIES = os.environ.get("NANOMIPS_STRICT_PROPERTIES") == "1"
 source = []
 for filename in ("nanomips.sinc", "nanomips_mt.sinc"):
@@ -153,6 +165,7 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
                 zip(JALRC_OVERLAP_ADDRESSES, JALRC_OVERLAP_CASES)]
     vectors += [(address, encoded) for address, (_, encoded) in
                 zip(SIGRIE_ADDRESSES, SIGRIE_CASES)]
+    vectors += [(address, encoded) for address, encoded, _, _, _ in UALWM_CASES]
     first = min(address for address, _ in vectors)
     last = max(0x4100, *(address + len(encoded) for address, encoded in vectors))
     image = bytearray(last - first)
