@@ -995,7 +995,7 @@ lo_uimm12_sl3: uimm12 is
 
 # BBEQZC rt, bit, address
 :BBEQZC rt, bitpos, lo_saddr12 is
-	hi_pool10_6 = 0b110010 & rt & hi_pool2_3 = 0b001 & hi_uimm0_1;
+	hi_pool10_6 = 0b110010 & rt & hi_pool2_3 = 0b001 & hi_uimm0_1 & hi_pool0_1 = 0;
 	lo_uimm11_5 & lo_saddr12
 	[
 		bitpos = (hi_uimm0_1 << 5) | lo_uimm11_5;
@@ -1005,10 +1005,21 @@ lo_uimm12_sl3: uimm12 is
 		if (testbit == 0) goto lo_saddr12;
 	}
 
+:BBEQZC rt, bitpos, lo_saddr12 is
+	hi_pool10_6 = 0b110010 & rt & hi_pool2_3 = 0b001 & hi_uimm0_1 & hi_pool0_1 = 1;
+	lo_uimm11_5 & lo_saddr12
+	[
+		bitpos = (hi_uimm0_1 << 5) | lo_uimm11_5;
+	]
+	{
+		sigrie(0:3);
+		goto inst_start;
+	}
+
 
 # BBNEZC rt, bit, address
 :BBNEZC rt, bitpos, lo_saddr12 is
-	hi_pool10_6 = 0b110010 & rt & hi_pool2_3 = 0b101 & hi_uimm0_1;
+	hi_pool10_6 = 0b110010 & rt & hi_pool2_3 = 0b101 & hi_uimm0_1 & hi_pool0_1 = 0;
 	lo_uimm11_5 & lo_saddr12
 	[
 		bitpos = (hi_uimm0_1 << 5) | lo_uimm11_5;
@@ -1016,6 +1027,17 @@ lo_uimm12_sl3: uimm12 is
 	{
 		local testbit:4 = (rt >> bitpos) & 1;
 		if (testbit == 1) goto lo_saddr12;
+	}
+
+:BBNEZC rt, bitpos, lo_saddr12 is
+	hi_pool10_6 = 0b110010 & rt & hi_pool2_3 = 0b101 & hi_uimm0_1 & hi_pool0_1 = 1;
+	lo_uimm11_5 & lo_saddr12
+	[
+		bitpos = (hi_uimm0_1 << 5) | lo_uimm11_5;
+	]
+	{
+		sigrie(0:3);
+		goto inst_start;
 	}
 
 
