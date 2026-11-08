@@ -38,6 +38,10 @@ public class ProbeSemantics extends GhidraScript {
         }
     }
 
+    private static class Barrier extends BreakCallBack {
+        @Override public boolean pcodeCallback(PcodeOpRaw op) { return true; }
+    }
+
     @Override public void run() throws Exception {
         String[] args = getScriptArgs();
         Map<String,Address> addresses = new HashMap<>();
@@ -61,6 +65,9 @@ public class ProbeSemantics extends GhidraScript {
             emulator.registerCallOtherCallback("debug_break", debugBreak);
             OverflowReference trap = new OverflowReference();
             emulator.registerCallOtherCallback("trap", trap);
+            Barrier barrier = new Barrier();
+            emulator.registerCallOtherCallback("clear_instruction_hazards", barrier);
+            emulator.registerCallOtherCallback("clear_execution_hazards", barrier);
             try {
                 emulator.writeRegister(emulator.getPCRegister(), address.getOffset());
                 if (!fields[2].equals("-")) {

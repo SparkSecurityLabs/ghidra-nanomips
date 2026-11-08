@@ -25,6 +25,17 @@ def addiupc_scenarios():
             yield bits, offset, encoded
 
 
+def jalrc_overlap_scenarios():
+    """Read the target before writing an overlapping link register."""
+    for register, number in (("a0", 4), ("ra", 31)):
+        for barrier in (0, 1):
+            word = (0b010010 << 26) | (number << 21) | (number << 16)
+            yield (f"jalrc_overlap_{register}_{barrier}",
+                   word_bytes(word | (barrier << 12)), register)
+    halfword = (0b110110 << 10) | (31 << 5) | (1 << 4)
+    yield "jalrc_overlap_ra_16", halfword.to_bytes(2, "little"), "ra"
+
+
 def cases():
     result = []
     for shift in (0, 1, 7, 8, 15, 16, 23, 24, 30, 31):
