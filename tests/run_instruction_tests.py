@@ -67,6 +67,15 @@ LLWP_CASES = [(0x9540, bytes.fromhex("84a42951"), "llwp_base_overlap",
                "a1=0xa000;a2=0xb000"),
               (0x9558, bytes.fromhex("a4a42152"), "llwpe_second_overlap",
                "a1=0xa000;a0=0xb000")]
+MT_VPE_CASES = [
+    (0x9560 + 8*index,
+     ((0b001000 << 10) | (rt << 5)).to_bytes(2, "little") +
+     (0x0eb0 if enable else 0x0ab0).to_bytes(2, "little"),
+     enable, rt, master, initial)
+    for index, (enable, rt, master, initial) in enumerate(
+        (enable, rt, master, initial)
+        for enable in (False, True) for rt in (0, 4, 7)
+        for master in (False, True) for initial in (0, 1))]
 SEMANTIC_CASES += [
     {"case": f"rotx_{shift}_{shiftx}_{stripe}_{index}",
      "constructor": hex(address), "registers_in": f"t0={value:#x}",
@@ -138,6 +147,16 @@ SEMANTIC_CASES += [
      "memory_out": "-", "status": "pass", "current_registers": "-",
      "current_memory": "-"}
     for address, _, name, registers_out in LLWP_CASES]
+SEMANTIC_CASES += [
+    {"case": f"{'evpe' if enable else 'dvpe'}_{rt}_{int(master)}_{initial}",
+     "constructor": hex(address),
+     "registers_in": f"C0.MVPControl={0xa4|initial:#x};C0.VPEConf0={0x100|int(master)<<1:#x}",
+     "registers_out": (f"C0.MVPControl={0xa4|(int(enable) if master else initial):#x};"
+                       f"C0.VPEConf0={0x100|int(master)<<1:#x}" +
+                       (f";{'a0' if rt == 4 else 'a3'}={0xa4|initial:#x}" if rt else "")),
+     "pc": "next", "memory_in": "-", "memory_out": "-", "status": "pass",
+     "current_registers": "-", "current_memory": "-"}
+    for address, _, enable, rt, master, initial in MT_VPE_CASES]
 STRICT_PROPERTIES = os.environ.get("NANOMIPS_STRICT_PROPERTIES") == "1"
 source = []
 for filename in ("nanomips.sinc", "nanomips_mt.sinc"):
@@ -201,6 +220,7 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
     vectors += [(address, encoded) for address, encoded, _, _ in RESTORE_GP_CASES]
     vectors += [(address, encoded) for address, encoded, _ in LWM_ZERO_CASES]
     vectors += [(address, encoded) for address, encoded, _, _ in LLWP_CASES]
+    vectors += [(address, encoded) for address, encoded, *_ in MT_VPE_CASES]
     first = min(address for address, _ in vectors)
     last = max(0x4100, *(address + len(encoded) for address, encoded in vectors))
     image = bytearray(last - first)

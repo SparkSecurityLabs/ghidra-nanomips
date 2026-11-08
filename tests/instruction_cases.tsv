@@ -254,9 +254,9 @@ nanomips.sinc:3902	JALRC	1f480000	TERMINATOR	assembled
 nanomips.sinc:3909	JALRC.HB	1f480010	TERMINATOR	assembled
 nanomips_mt.sinc:4	DMT	a120b00a	FALL_THROUGH	sampled
 nanomips_mt.sinc:14	DVPE	e020b00a	FALL_THROUGH	sampled
-nanomips_mt.sinc:24	EMT	0120b00e	FALL_THROUGH	sampled
-nanomips_mt.sinc:34	EVPE	c020b00e	FALL_THROUGH	sampled
-nanomips_mt.sinc:44	FORK	c5202822	FALL_THROUGH	assembled
-nanomips_mt.sinc:51	MFTR	5322301a	FALL_THROUGH	sampled
-nanomips_mt.sinc:58	MTTR	1320701a	FALL_THROUGH	sampled
-nanomips_mt.sinc:68	YIELD	07206802	FALL_THROUGH	sampled
+nanomips_mt.sinc:26	EMT	0120b00e	FALL_THROUGH	sampled
+nanomips_mt.sinc:36	EVPE	c020b00e	FALL_THROUGH	sampled
+nanomips_mt.sinc:48	FORK	c5202822	FALL_THROUGH	assembled
+nanomips_mt.sinc:55	MFTR	5322301a	FALL_THROUGH	sampled
+nanomips_mt.sinc:62	MTTR	1320701a	FALL_THROUGH	sampled
+nanomips_mt.sinc:72	YIELD	07206802	FALL_THROUGH	sampled

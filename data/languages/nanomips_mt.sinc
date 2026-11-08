@@ -16,7 +16,9 @@
 	lo_pool14_2 = 0b00 & lo_pool11_3 = 0b001 & sc = 0b0 & lo_pool3_7 = 0b1010110 & lo_pool0_3 = 0b000
 	{
 		rt = C0.MVPControl:$(REGSIZE);
+		if (C0.VPEConf0[1,1] == 0) goto <done>;
 		C0.MVPControl.EVP = 0;
+		<done>
 	}
 
 
@@ -36,7 +38,9 @@
 	lo_pool14_2 = 0b00 & lo_pool11_3 = 0b001 & sc = 0b1 & lo_pool3_7 = 0b1010110 & lo_pool0_3 = 0b000
 	{
 		rt = C0.MVPControl:$(REGSIZE);
+		if (C0.VPEConf0[1,1] == 0) goto <done>;
 		C0.MVPControl.EVP = 1;
+		<done>
 	}
 
 
