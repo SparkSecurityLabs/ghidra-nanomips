@@ -56,6 +56,9 @@ UALWM_CASES = [(0x9400, bytes.fromhex("04a60425"), 0x6000, 4, 2),
 RESTORE_GP_CASES = [(0x9500, bytes.fromhex("63834630"), 3, False),
                     (0x9508, bytes.fromhex("ef834630"), 15, False),
                     (0x9510, bytes.fromhex("63834730"), 3, True)]
+LWM_ZERO_CASES = [(0x9520, bytes.fromhex("1fa40014"), 1),
+                  (0x9528, bytes.fromhex("1fa40004"), 8),
+                  (0x9530, bytes.fromhex("3fa40004"), 8)]
 SEMANTIC_CASES += [
     {"case": f"rotx_{shift}_{shiftx}_{stripe}_{index}",
      "constructor": hex(address), "registers_in": f"t0={value:#x}",
@@ -181,6 +184,7 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
                 zip(SIGRIE_ADDRESSES, SIGRIE_CASES)]
     vectors += [(address, encoded) for address, encoded, _, _, _ in UALWM_CASES]
     vectors += [(address, encoded) for address, encoded, _, _ in RESTORE_GP_CASES]
+    vectors += [(address, encoded) for address, encoded, _ in LWM_ZERO_CASES]
     first = min(address for address, _ in vectors)
     last = max(0x4100, *(address + len(encoded) for address, encoded in vectors))
     image = bytearray(last - first)
@@ -337,6 +341,11 @@ with tempfile.TemporaryDirectory(prefix="nanomips-flow-") as scratch:
         if (len(fields) != 6 or fields[1].split()[0] != "SIGRIE"
                 or fields[2] != "TERMINATOR" or "BRANCH" not in fields[4].split(",")):
             failures.append(f"{address:#x}: missing SIGRIE termination: {fields}")
+    for address, _, count in LWM_ZERO_CASES:
+        fields = actual.get(address, [])
+        if (len(fields) != 6 or fields[1].split()[0] != "LWM"
+                or fields[4].split(",").count("LOAD") != count):
+            failures.append(f"{address:#x}: expected {count} LWM memory reads, got {fields}")
     for issue in KNOWN_ISSUES:
         address = instruction_addresses[next(i for i, row in enumerate(CASES)
                                              if row["constructor"] == issue["constructor"])]

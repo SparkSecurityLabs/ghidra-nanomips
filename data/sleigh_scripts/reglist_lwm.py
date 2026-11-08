@@ -44,7 +44,8 @@ def main():
         else:
             # LWM
             if reg == 'zero':
-                pcode = ''  # write to $zero is NOP
+                # Loading into $zero still performs the memory access.
+                pcode = 'local ignored_zero:4 = *:4 load_multiple_base;'
             else:
                 pcode = f'{reg} = sext(*:4 (load_multiple_base + $(REGSIZE)*({i}-rt_raw)));'
 
@@ -72,7 +73,8 @@ def main():
             if (not args.load) and i<= 7:
                 print(f'{name}: is (rt_raw2 = 0 ...) & {pattern} & {next_name}\t\t\t\t{{{pcode_zero}}}')
 
-            print(f'{name}: is {pattern} & {next_name}\t\t\t\t{{{pcode}}}')
+            body = f'{pcode} build {next_name};' if args.load and reg == 'zero' else pcode
+            print(f'{name}: is {pattern} & {next_name}\t\t\t\t{{{body}}}')
 
     # entry points to first register (fp or ra)
     for i in range(31, -1, -1):
